@@ -1,13 +1,18 @@
 "use client";
 
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/style.css";
 import {
   ArrowLeft,
   ArrowRight,
+  Calendar,
   Eye,
   EyeOff,
   Lock,
+  CalendarDays,
+  ChevronDown,
   Mail,
-  User
+  User,
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -21,9 +26,26 @@ export default function SignUp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [gender, setGender] = useState<"Male" | "Female" | "Other" | "">("");
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+
+  function handleDateSelect(date: Date | undefined) {
+    if (!date) return;
+
+    const year = date.getFullYear();
+
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+
+    const day = String(date.getDate()).padStart(2, "0");
+
+    setDateOfBirth(`${year}-${month}-${day}`);
+
+    setIsDatePickerOpen(false);
+  }
 
   async function handleSignUp(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -41,16 +63,48 @@ export default function SignUp() {
       return;
     }
 
+    if (!dateOfBirth) {
+      setMessage("Please enter your date of birth.");
+      return;
+    }
+
+    const birthDate = new Date(dateOfBirth);
+    const today = new Date();
+
+    let age = today.getFullYear() - birthDate.getFullYear();
+
+    const monthDifference = today.getMonth() - birthDate.getMonth();
+
+    const dayDifference = today.getDate() - birthDate.getDate();
+
+    if (monthDifference < 0 || (monthDifference === 0 && dayDifference < 0)) {
+      age--;
+    }
+
+    if (age < 16 || age > 90) {
+      setMessage(
+        "You must be between 16 and 90 years old to create an account."
+      );
+      return;
+    }
+
+    if (!gender) {
+      setMessage("Please select your gender.");
+      return;
+    }
+
     setLoading(true);
 
     const supabase = createClient();
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           first_name: firstName.trim(),
+          date_of_birth: dateOfBirth,
+          gender,
         },
       },
     });
@@ -59,6 +113,32 @@ export default function SignUp() {
       setMessage(error.message);
       setLoading(false);
       return;
+    }
+    
+    if (data.user) {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert(
+          {
+            id: data.user.id,
+            first_name: firstName.trim(),
+            date_of_birth: dateOfBirth,
+            gender,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: "id",
+          }
+        );
+    
+      if (profileError) {
+        console.error("Error creating profile:", profileError);
+        setMessage(
+          "Account was created, but we couldn't create your profile."
+        );
+        setLoading(false);
+        return;
+      }
     }
 
     setMessage(
@@ -114,26 +194,133 @@ export default function SignUp() {
             <form onSubmit={handleSignUp} className="space-y-5">
               {/* Surname */}
               <div>
+                <label className="mb-2 block text-sm text-white/70">
+                  First name
+                </label>
+
+                <div className="relative">
+                  <User
+                    size={18}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30"
+                  />
+
+                  <input
+                    type="text"
+                    placeholder="Adrian"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                    className="w-full rounded-xl border border-white/10 bg-black/20 py-3.5 pl-12 pr-4 text-sm outline-none transition placeholder:text-white/25 focus:border-violet-500/70"
+                  />
+                </div>
+              </div>
+
+              {/* Date of birth */}
+              {/* Date of birth */}
+<div className="relative">
   <label className="mb-2 block text-sm text-white/70">
-    First name
+    Date of birth
   </label>
 
-  <div className="relative">
-    <User
-      size={18}
-      className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30"
-    />
+  <button
+    type="button"
+    onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+    className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-black/20 px-4 py-3.5 text-left transition hover:border-violet-500/70"
+  >
+    <div className="flex items-center gap-3">
+      <CalendarDays size={18} className="text-white/30" />
 
-    <input
-      type="text"
-      placeholder="Adrian"
-      value={firstName}
-      onChange={(e) => setFirstName(e.target.value)}
-      required
-      className="w-full rounded-xl border border-white/10 bg-black/20 py-3.5 pl-12 pr-4 text-sm outline-none transition placeholder:text-white/25 focus:border-violet-500/70"
+      <span
+        className={dateOfBirth ? "text-white" : "text-white/25"}
+      >
+        {dateOfBirth
+          ? new Date(
+              dateOfBirth + "T00:00:00"
+            ).toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            })
+          : "Select your date of birth"}
+      </span>
+    </div>
+
+    <ChevronDown
+      size={18}
+      className={`text-white/40 transition ${
+        isDatePickerOpen ? "rotate-180" : ""
+      }`}
     />
-  </div>
+  </button>
+
+  <p className="mt-2 text-xs text-white/35">
+    Your date of birth cannot be changed later.
+  </p>
+
+  {isDatePickerOpen && (
+    <div className="absolute left-0 top-full z-50 mt-3 rounded-2xl border border-violet-400/20 bg-[#15121f] p-4 shadow-2xl shadow-black/50">
+      <DayPicker
+        mode="single"
+        selected={
+          dateOfBirth
+            ? new Date(dateOfBirth + "T00:00:00")
+            : undefined
+        }
+        onSelect={handleDateSelect}
+        captionLayout="dropdown"
+        startMonth={
+          new Date(
+            new Date().getFullYear() - 90,
+            new Date().getMonth(),
+            new Date().getDate()
+          )
+        }
+        endMonth={
+          new Date(
+            new Date().getFullYear() - 16,
+            new Date().getMonth(),
+            new Date().getDate()
+          )
+        }
+        className="text-white"
+      />
+    </div>
+  )}
 </div>
+
+              {/* Gender */}
+              <div>
+                <label className="mb-2 block text-sm text-white/70">
+                  Gender
+                </label>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: "Male", label: "Male" },
+                    { value: "Female", label: "Female" },
+                    { value: "Other", label: "Other" },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() =>
+                        setGender(option.value as "Male" | "Female" | "Other")
+                      }
+                      className={`rounded-xl border px-4 py-3 text-sm font-medium transition ${
+                        gender === option.value
+                          ? "border-violet-400 bg-violet-500/15 text-violet-200"
+                          : "border-white/10 bg-black/20 text-white/50 hover:border-white/20 hover:text-white"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+
+                <p className="mt-2 text-xs text-white/30">
+                  Your gender cannot be changed later.
+                </p>
+              </div>
 
               {/* Email */}
               <div>
@@ -212,9 +399,7 @@ export default function SignUp() {
 
                   <button
                     type="button"
-                    onClick={() =>
-                      setShowRepeatPassword(!showRepeatPassword)
-                    }
+                    onClick={() => setShowRepeatPassword(!showRepeatPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 transition hover:text-white"
                   >
                     {showRepeatPassword ? (

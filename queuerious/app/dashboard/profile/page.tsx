@@ -13,25 +13,232 @@ import {
   ChevronRight,
   ImagePlus,
   MapPin,
+  Eye,
+  X,
   Ruler,
   Sparkles,
   User,
 } from "lucide-react";
 
-const interestsList = [
-  { name: "Gaming", emoji: "🎮" },
-  { name: "Fitness", emoji: "🏋️" },
-  { name: "Hiking", emoji: "🏔️" },
-  { name: "Music", emoji: "🎵" },
-  { name: "Movies", emoji: "🎬" },
-  { name: "Travel", emoji: "✈️" },
-  { name: "Cooking", emoji: "🍳" },
-  { name: "Reading", emoji: "📚" },
-  { name: "Art", emoji: "🎨" },
-  { name: "Animals", emoji: "🐶" },
-  { name: "Photography", emoji: "📸" },
-  { name: "Cars", emoji: "🏎️" },
+const interestCategories = [
+  {
+    category: "Music",
+    emoji: "🎵",
+    interests: [
+      { name: "Pop", emoji: "🎤" },
+      { name: "Rock", emoji: "🎸" },
+      { name: "Metal", emoji: "🤘" },
+      { name: "Hip-Hop", emoji: "🎧" },
+      { name: "Rap", emoji: "🎙️" },
+      { name: "R&B", emoji: "🎶" },
+      { name: "Jazz", emoji: "🎷" },
+      { name: "Blues", emoji: "🎼" },
+      { name: "Classical Music", emoji: "🎻" },
+      { name: "Electronic Music", emoji: "⚡" },
+      { name: "Techno", emoji: "🔊" },
+      { name: "House Music", emoji: "🏠" },
+      { name: "Drum & Bass", emoji: "🥁" },
+      { name: "Dubstep", emoji: "💥" },
+      { name: "Indie Music", emoji: "🌙" },
+      { name: "Alternative Music", emoji: "🖤" },
+      { name: "Country Music", emoji: "🤠" },
+      { name: "Folk Music", emoji: "🪕" },
+      { name: "Punk", emoji: "⚡" },
+      { name: "K-Pop", emoji: "✨" },
+      { name: "Reggaeton", emoji: "🔥" },
+      { name: "Latin Music", emoji: "💃" },
+    ],
+  },
+
+  {
+    category: "Sports & Fitness",
+    emoji: "🏆",
+    interests: [
+      { name: "Football", emoji: "⚽" },
+      { name: "Basketball", emoji: "🏀" },
+      { name: "Tennis", emoji: "🎾" },
+      { name: "Volleyball", emoji: "🏐" },
+      { name: "Handball", emoji: "🤾" },
+      { name: "Running", emoji: "🏃" },
+      { name: "Gym", emoji: "🏋️" },
+      { name: "Bodybuilding", emoji: "💪" },
+      { name: "CrossFit", emoji: "🔥" },
+      { name: "Swimming", emoji: "🏊" },
+      { name: "Cycling", emoji: "🚴" },
+      { name: "Hiking", emoji: "🥾" },
+      { name: "Climbing", emoji: "🧗" },
+      { name: "Boxing", emoji: "🥊" },
+      { name: "MMA", emoji: "🥋" },
+      { name: "Yoga", emoji: "🧘" },
+      { name: "Pilates", emoji: "🤸" },
+      { name: "Skiing", emoji: "⛷️" },
+      { name: "Snowboarding", emoji: "🏂" },
+      { name: "Surfing", emoji: "🏄" },
+      { name: "Formula 1", emoji: "🏎️" },
+      { name: "Motorsport", emoji: "🏁" },
+    ],
+  },
+
+  {
+    category: "Gaming",
+    emoji: "🎮",
+    interests: [
+      { name: "Gaming", emoji: "🎮" },
+      { name: "PC Gaming", emoji: "🖥️" },
+      { name: "PlayStation", emoji: "🎮" },
+      { name: "Xbox", emoji: "🟢" },
+      { name: "Nintendo", emoji: "🍄" },
+      { name: "RPG Games", emoji: "🗡️" },
+      { name: "FPS Games", emoji: "🎯" },
+      { name: "Strategy Games", emoji: "♟️" },
+      { name: "Simulation Games", emoji: "🚜" },
+      { name: "Indie Games", emoji: "🕹️" },
+      { name: "Board Games", emoji: "🎲" },
+      { name: "Chess", emoji: "♟️" },
+      { name: "Esports", emoji: "🏆" },
+    ],
+  },
+
+  {
+    category: "Movies & Entertainment",
+    emoji: "🎬",
+    interests: [
+      { name: "Movies", emoji: "🎬" },
+      { name: "TV Series", emoji: "📺" },
+      { name: "Anime", emoji: "🌸" },
+      { name: "Documentaries", emoji: "🎥" },
+      { name: "Comedy", emoji: "😂" },
+      { name: "Horror Movies", emoji: "👻" },
+      { name: "Thriller Movies", emoji: "😱" },
+      { name: "Action Movies", emoji: "💥" },
+      { name: "Sci-Fi", emoji: "🚀" },
+      { name: "Fantasy", emoji: "🧙" },
+      { name: "Marvel", emoji: "🦸" },
+      { name: "Star Wars", emoji: "🌌" },
+      { name: "Reality Shows", emoji: "📺" },
+    ],
+  },
+
+  {
+    category: "Creative",
+    emoji: "🎨",
+    interests: [
+      { name: "Photography", emoji: "📸" },
+      { name: "Drawing", emoji: "✏️" },
+      { name: "Painting", emoji: "🎨" },
+      { name: "Writing", emoji: "✍️" },
+      { name: "Creative Writing", emoji: "📖" },
+      { name: "Graphic Design", emoji: "🖥️" },
+      { name: "Fashion", emoji: "👗" },
+      { name: "Singing", emoji: "🎤" },
+      { name: "Dancing", emoji: "💃" },
+      { name: "Music Production", emoji: "🎛️" },
+      { name: "Playing Guitar", emoji: "🎸" },
+      { name: "Playing Piano", emoji: "🎹" },
+      { name: "Filmmaking", emoji: "🎥" },
+    ],
+  },
+
+  {
+    category: "Travel & Outdoors",
+    emoji: "🌍",
+    interests: [
+      { name: "Travel", emoji: "✈️" },
+      { name: "Road Trips", emoji: "🚗" },
+      { name: "Camping", emoji: "🏕️" },
+      { name: "Backpacking", emoji: "🎒" },
+      { name: "Nature", emoji: "🌲" },
+      { name: "Exploring Cities", emoji: "🏙️" },
+      { name: "Beaches", emoji: "🏖️" },
+      { name: "Mountains", emoji: "⛰️" },
+      { name: "Adventure Travel", emoji: "🧭" },
+      { name: "Van Life", emoji: "🚐" },
+    ],
+  },
+
+  {
+    category: "Food & Lifestyle",
+    emoji: "🍳",
+    interests: [
+      { name: "Cooking", emoji: "🍳" },
+      { name: "Baking", emoji: "🧁" },
+      { name: "Coffee", emoji: "☕" },
+      { name: "Tea", emoji: "🍵" },
+      { name: "Wine & Food", emoji: "🍷" },
+      { name: "Restaurants", emoji: "🍽️" },
+      { name: "Street Food", emoji: "🌮" },
+      { name: "Healthy Living", emoji: "🥗" },
+      { name: "Nightlife", emoji: "🌃" },
+      { name: "Shopping", emoji: "🛍️" },
+    ],
+  },
+
+  {
+    category: "Books & Learning",
+    emoji: "📚",
+    interests: [
+      { name: "Reading", emoji: "📚" },
+      { name: "Fiction", emoji: "📖" },
+      { name: "Fantasy Books", emoji: "🐉" },
+      { name: "Sci-Fi Books", emoji: "🚀" },
+      { name: "History", emoji: "🏛️" },
+      { name: "Psychology", emoji: "🧠" },
+      { name: "Philosophy", emoji: "💭" },
+      { name: "Science", emoji: "🔬" },
+      { name: "Astronomy", emoji: "🔭" },
+      { name: "Languages", emoji: "🗣️" },
+      { name: "Learning", emoji: "🎓" },
+    ],
+  },
+
+  {
+    category: "Tech & Geek",
+    emoji: "💻",
+    interests: [
+      { name: "Technology", emoji: "💻" },
+      { name: "Programming", emoji: "👨‍💻" },
+      { name: "Web Development", emoji: "🌐" },
+      { name: "AI", emoji: "🤖" },
+      { name: "Cybersecurity", emoji: "🔐" },
+      { name: "Space", emoji: "🪐" },
+      { name: "Gadgets", emoji: "📱" },
+      { name: "Startups", emoji: "🚀" },
+      { name: "Robotics", emoji: "🦾" },
+    ],
+  },
+
+  {
+    category: "Animals & Nature",
+    emoji: "🐾",
+    interests: [
+      { name: "Dogs", emoji: "🐶" },
+      { name: "Cats", emoji: "🐱" },
+      { name: "Animals", emoji: "🐾" },
+      { name: "Wildlife", emoji: "🦁" },
+      { name: "Birdwatching", emoji: "🦅" },
+      { name: "Gardening", emoji: "🌱" },
+      { name: "Plants", emoji: "🪴" },
+    ],
+  },
+
+  {
+    category: "Cars & Collecting",
+    emoji: "🏎️",
+    interests: [
+      { name: "Cars", emoji: "🏎️" },
+      { name: "Motorcycles", emoji: "🏍️" },
+      { name: "Classic Cars", emoji: "🚘" },
+      { name: "Car Modification", emoji: "🔧" },
+      { name: "Motorcycles & Touring", emoji: "🛣️" },
+      { name: "Collecting", emoji: "🧩" },
+      { name: "Sneakers", emoji: "👟" },
+    ],
+  },
 ];
+
+const interestsList = interestCategories.flatMap(
+  (category) => category.interests
+);
 
 const romanianCities = [
   "Alba Iulia",
@@ -99,8 +306,6 @@ function calculateAge(dateOfBirth: string) {
 export default function ProfilePage() {
   const [firstName, setFirstName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [gender, setGender] = useState("");
   const [height, setHeight] = useState("");
   const [location, setLocation] = useState("");
   const [locationSearch, setLocationSearch] = useState("");
@@ -109,6 +314,18 @@ export default function ProfilePage() {
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
   const [previewPhotoIndex, setPreviewPhotoIndex] = useState(0);
+  const [interestSearch, setInterestSearch] = useState("");
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [locationError, setLocationError] = useState("");
+
+  const filteredInterestCategories = interestCategories
+    .map((category) => ({
+      ...category,
+      interests: category.interests.filter((interest) =>
+        interest.name.toLowerCase().includes(interestSearch.toLowerCase())
+      ),
+    }))
+    .filter((category) => category.interests.length > 0);
 
   const [photos, setPhotos] = useState<(string | null)[]>([
     null,
@@ -127,16 +344,7 @@ export default function ProfilePage() {
 
   const supabase = createClient();
 
-  const handleDateSelect = (date: Date | undefined) => {
-    if (!date) return;
-
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-
-    setDateOfBirth(`${year}-${month}-${day}`);
-    setIsDatePickerOpen(false);
-  };
+  const [heightError, setHeightError] = useState("");
 
   const age = useMemo(() => calculateAge(dateOfBirth), [dateOfBirth]);
 
@@ -162,6 +370,8 @@ export default function ProfilePage() {
 
   async function handleSave() {
     setSaved(false);
+    setHeightError("");
+    setLocationError("");
 
     if (!firstName.trim()) {
       alert("Please enter your first name.");
@@ -173,25 +383,15 @@ export default function ProfilePage() {
       return;
     }
 
-    if (!isAgeValid) {
-      alert("You must be between 16 and 90 years old.");
-      return;
-    }
-
-    if (!gender) {
-      alert("Please select your gender.");
-      return;
-    }
-
     const heightNumber = Number(height);
 
     if (!height || heightNumber < 130 || heightNumber > 230) {
-      alert("Height must be between 130 and 230 cm.");
+      setHeightError("Height must be between 130 and 230 cm.");
       return;
     }
 
     if (!location) {
-      alert("Please select your city.");
+      setLocationError("Please select your city.");
       return;
     }
 
@@ -216,8 +416,6 @@ export default function ProfilePage() {
         {
           id: user.id,
           first_name: firstName.trim(),
-          date_of_birth: dateOfBirth,
-          gender,
           height_cm: heightNumber,
           location,
           bio: bio.trim(),
@@ -225,6 +423,7 @@ export default function ProfilePage() {
           photo_urls: photoUrls,
           updated_at: new Date().toISOString(),
         },
+
         {
           onConflict: "id",
         }
@@ -279,7 +478,6 @@ export default function ProfilePage() {
 
         setFirstName(data.first_name ?? "");
         setDateOfBirth(data.date_of_birth ?? "");
-        setGender(data.gender ?? "");
         setHeight(data.height_cm ? String(data.height_cm) : "");
         setLocation(data.location ?? "");
         setLocationSearch(data.location ?? "");
@@ -310,9 +508,7 @@ export default function ProfilePage() {
     fileInputRef.current?.click();
   }
 
-  async function handlePhotoUpload(
-    event: React.ChangeEvent<HTMLInputElement>
-  ) {
+  async function handlePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     const slot = selectedSlotRef.current;
 
@@ -419,110 +615,109 @@ export default function ProfilePage() {
           onChange={handlePhotoUpload}
         />
 
-        {/* PHOTO AREA */}
-        <div className="mb-6 rounded-[32px] border border-white/[0.07] bg-white/[0.025] p-6 sm:p-8">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold">Photos</h2>
-
-              <p className="mt-1 text-sm text-white/40">
-                Show them who they were talking to.
-              </p>
-            </div>
-
-            <span className="text-xs text-white/30">Coming soon</span>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {photos.map((photo, index) => (
-              <div
-                key={index}
-                className={`group relative aspect-[3/4] overflow-hidden rounded-3xl border ${
-                  index === 0
-                    ? "border-violet-400/25 bg-violet-500/[0.06]"
-                    : "border-white/[0.10] bg-white/[0.015]"
-                }`}
-              >
-                {photo ? (
-                  <>
-                    <img
-                      src={photo}
-                      alt={`Profile photo ${index + 1}`}
-                      className="h-full w-full object-cover"
-                    />
-
-                    <div className="absolute inset-0 flex items-end justify-between bg-gradient-to-t from-black/80 via-black/10 to-transparent p-3 opacity-0 transition group-hover:opacity-100">
-                      <button
-                        type="button"
-                        onClick={() => openFilePicker(index)}
-                        className="rounded-xl bg-black/60 px-3 py-2 text-xs font-medium text-white backdrop-blur transition hover:bg-black/80"
-                      >
-                        Replace
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => removePhoto(index)}
-                        className="rounded-xl bg-red-500/80 px-3 py-2 text-xs font-medium text-white transition hover:bg-red-500"
-                      >
-                        Remove
-                      </button>
-                    </div>
-
-                    {index === 0 && (
-                      <div className="absolute left-3 top-3 rounded-full bg-violet-500 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
-                        Main
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => openFilePicker(index)}
-                    disabled={uploadingSlot === index}
-                    className="flex h-full w-full flex-col items-center justify-center text-center transition hover:bg-white/[0.03]"
-                  >
-                    <div
-                      className={`flex h-12 w-12 items-center justify-center rounded-2xl ${
-                        index === 0
-                          ? "bg-violet-500/15 text-violet-300"
-                          : "bg-white/[0.05] text-white/30"
-                      }`}
-                    >
-                      {uploadingSlot === index ? (
-                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white/80" />
-                      ) : index === 0 ? (
-                        <Camera size={21} />
-                      ) : (
-                        <ImagePlus size={22} />
-                      )}
-                    </div>
-
-                    <p className="mt-3 text-sm font-medium">
-                      {uploadingSlot === index
-                        ? "Uploading..."
-                        : index === 0
-                        ? "Main photo"
-                        : `Photo ${index + 1}`}
-                    </p>
-
-                    <p className="mt-1 text-xs text-white/30">
-                      {uploadingSlot === index
-                        ? "Please wait"
-                        : index === 0
-                        ? "Your first impression"
-                        : "Add a photo"}
-                    </p>
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
         <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
           {/* LEFT COLUMN */}
           <div className="space-y-6">
+            {/* PHOTO AREA */}
+            <div className="rounded-[32px] border border-white/[0.07] bg-white/[0.025] p-6 sm:p-8">
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold">Photos</h2>
+
+                  <p className="mt-1 text-sm text-white/40">
+                    Show them who they were talking to.
+                  </p>
+                </div>
+
+                <span className="text-xs text-white/30">Coming soon</span>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                {photos.map((photo, index) => (
+                  <div
+                    key={index}
+                    className={`group relative aspect-[3/4] overflow-hidden rounded-3xl border ${
+                      index === 0
+                        ? "border-violet-400/25 bg-violet-500/[0.06]"
+                        : "border-white/[0.10] bg-white/[0.015]"
+                    }`}
+                  >
+                    {photo ? (
+                      <>
+                        <img
+                          src={photo}
+                          alt={`Profile photo ${index + 1}`}
+                          className="h-full w-full object-cover"
+                        />
+
+                        <div className="absolute inset-0 flex items-end justify-between bg-gradient-to-t from-black/80 via-black/10 to-transparent p-3 opacity-0 transition group-hover:opacity-100">
+                          <button
+                            type="button"
+                            onClick={() => openFilePicker(index)}
+                            className="rounded-xl bg-black/60 px-3 py-2 text-xs font-medium text-white backdrop-blur transition hover:bg-black/80"
+                          >
+                            Replace
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => removePhoto(index)}
+                            className="rounded-xl bg-red-500/80 px-3 py-2 text-xs font-medium text-white transition hover:bg-red-500"
+                          >
+                            Remove
+                          </button>
+                        </div>
+
+                        {index === 0 && (
+                          <div className="absolute left-3 top-3 rounded-full bg-violet-500 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
+                            Main
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => openFilePicker(index)}
+                        disabled={uploadingSlot === index}
+                        className="flex h-full w-full flex-col items-center justify-center text-center transition hover:bg-white/[0.03]"
+                      >
+                        <div
+                          className={`flex h-12 w-12 items-center justify-center rounded-2xl ${
+                            index === 0
+                              ? "bg-violet-500/15 text-violet-300"
+                              : "bg-white/[0.05] text-white/30"
+                          }`}
+                        >
+                          {uploadingSlot === index ? (
+                            <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white/80" />
+                          ) : index === 0 ? (
+                            <Camera size={21} />
+                          ) : (
+                            <ImagePlus size={22} />
+                          )}
+                        </div>
+
+                        <p className="mt-3 text-sm font-medium">
+                          {uploadingSlot === index
+                            ? "Uploading..."
+                            : index === 0
+                            ? "Main photo"
+                            : `Photo ${index + 1}`}
+                        </p>
+
+                        <p className="mt-1 text-xs text-white/30">
+                          {uploadingSlot === index
+                            ? "Please wait"
+                            : index === 0
+                            ? "Your first impression"
+                            : "Add a photo"}
+                        </p>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
             {/* Basics */}
             <div className="rounded-[32px] border border-white/[0.07] bg-white/[0.025] p-6 sm:p-8">
               <div className="mb-8">
@@ -563,85 +758,36 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Date of birth */}
-                <div className="relative">
+                <div>
                   <label className="mb-2 block text-sm font-medium text-white/70">
                     Date of birth
                   </label>
 
-                  <button
-                    type="button"
-                    onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-                    className="flex w-full items-center justify-between rounded-2xl border border-white/[0.08] bg-black/20 px-4 py-3.5 text-left transition hover:border-violet-400/40"
-                  >
-                    <div className="flex items-center gap-3">
-                      <CalendarDays size={18} className="text-white/40" />
+                  <div className="flex w-full items-center gap-3 rounded-2xl border border-white/[0.08] bg-black/20 px-4 py-3.5">
+                    <CalendarDays size={18} className="text-white/30" />
 
-                      <span
-                        className={
-                          dateOfBirth ? "text-white" : "text-white/30"
-                        }
-                      >
-                        {dateOfBirth
-                          ? new Date(
-                              dateOfBirth + "T00:00:00"
-                            ).toLocaleDateString("en-GB", {
-                              day: "2-digit",
-                              month: "long",
-                              year: "numeric",
-                            })
-                          : "Select your date of birth"}
-                      </span>
-                    </div>
-
-                    <ChevronDown
-                      size={18}
-                      className={`text-white/40 transition ${
-                        isDatePickerOpen ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-
-                  {isDatePickerOpen && (
-                    <div className="absolute left-0 top-full z-50 mt-3 rounded-2xl border border-violet-400/20 bg-[#15121f] p-4 shadow-2xl shadow-black/50">
-                      <DayPicker
-                        mode="single"
-                        selected={
-                          dateOfBirth
-                            ? new Date(dateOfBirth + "T00:00:00")
-                            : undefined
-                        }
-                        onSelect={handleDateSelect}
-                        captionLayout="dropdown"
-                        startMonth={new Date(1936, 0)}
-                        endMonth={new Date(2010, 11)}
-                        className="text-white"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Gender */}
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-white/70">
-                    Gender
-                  </label>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    {["Male", "Female", "Other"].map((option) => (
-                      <button
-                        key={option}
-                        type="button"
-                        onClick={() => setGender(option)}
-                        className={`rounded-2xl border px-3 py-3 text-sm transition ${
-                          gender === option
-                            ? "border-violet-400/50 bg-violet-500/15 text-violet-200"
-                            : "border-white/[0.08] bg-black/20 text-white/40 hover:border-white/15 hover:text-white/70"
-                        }`}
-                      >
-                        {option}
-                      </button>
-                    ))}
+                    <span
+                      className={
+                        dateOfBirth
+                          ? "text-sm text-white/70"
+                          : "text-sm text-white/30"
+                      }
+                    >
+                      {dateOfBirth
+                        ? new Date(
+                            dateOfBirth + "T00:00:00"
+                          ).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "long",
+                            year: "numeric",
+                          })
+                        : "Not available"}
+                    </span>
                   </div>
+
+                  <p className="mt-2 text-xs text-white/25">
+                    Your date of birth cannot be changed.
+                  </p>
                 </div>
 
                 {/* Height */}
@@ -661,7 +807,10 @@ export default function ProfilePage() {
                       min="130"
                       max="230"
                       value={height}
-                      onChange={(e) => setHeight(e.target.value)}
+                      onChange={(e) => {
+                        setHeight(e.target.value);
+                        setHeightError("");
+                      }}
                       placeholder="180"
                       className="w-full rounded-2xl border border-white/[0.08] bg-black/20 py-3.5 pl-12 pr-14 text-sm outline-none transition placeholder:text-white/20 focus:border-violet-400/50"
                     />
@@ -671,9 +820,18 @@ export default function ProfilePage() {
                     </span>
                   </div>
 
-                  <p className="mt-2 text-xs text-white/25">
-                    Between 130 and 230 cm
-                  </p>
+                  <div className="mt-2 min-h-[20px]">
+                    {heightError ? (
+                      <div className="flex items-center gap-2 text-xs font-medium text-red-400">
+                        <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                        {heightError}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-white/30">
+                        Between 130 and 230 cm
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Location */}
@@ -701,6 +859,11 @@ export default function ProfilePage() {
                       placeholder="Search for your city..."
                       className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.03] py-3.5 pl-12 pr-12 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-violet-400/40 focus:bg-white/[0.05]"
                     />
+                    {locationError && (
+                      <p className="mt-2 text-sm text-red-400">
+                        {locationError}
+                      </p>
+                    )}
 
                     <ChevronDown
                       size={18}
@@ -724,10 +887,7 @@ export default function ProfilePage() {
                             }}
                             className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm text-white/70 transition hover:bg-violet-500/10 hover:text-white"
                           >
-                            <MapPin
-                              size={16}
-                              className="text-violet-300/70"
-                            />
+                            <MapPin size={16} className="text-violet-300/70" />
                             {city}
                           </button>
                         ))
@@ -777,6 +937,17 @@ export default function ProfilePage() {
             </div>
 
             {/* Interests */}
+
+            <div className="relative mb-6">
+              <input
+                type="text"
+                value={interestSearch}
+                onChange={(e) => setInterestSearch(e.target.value)}
+                placeholder="Search interests..."
+                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-violet-400/40 focus:bg-violet-500/[0.04]"
+              />
+            </div>
+
             <div className="rounded-[32px] border border-white/[0.07] bg-white/[0.025] p-6 sm:p-8">
               <div className="mb-7 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
@@ -798,35 +969,55 @@ export default function ProfilePage() {
                 </span>
               </div>
 
-              <div className="flex flex-wrap gap-3">
-                {interestsList.map((interest) => {
-                  const isSelected = selectedInterests.includes(interest.name);
-                  const isDisabled =
-                    !isSelected && selectedInterests.length >= 4;
+              <div className="space-y-8">
+                {filteredInterestCategories.map((category) => (
+                  <div key={category.category}>
+                    {/* Category title */}
 
-                  return (
-                    <button
-                      key={interest.name}
-                      type="button"
-                      disabled={isDisabled}
-                      onClick={() => toggleInterest(interest.name)}
-                      className={`flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm transition ${
-                        isSelected
-                          ? "border-violet-400/50 bg-violet-500/15 text-violet-100"
-                          : isDisabled
-                          ? "cursor-not-allowed border-white/[0.04] bg-white/[0.01] text-white/15"
-                          : "border-white/[0.08] bg-black/20 text-white/45 hover:border-white/20 hover:text-white/75"
-                      }`}
-                    >
-                      <span>{interest.emoji}</span>
-                      {interest.name}
+                    <div className="mb-3 flex items-center gap-2">
+                      <span className="text-lg">{category.emoji}</span>
 
-                      {isSelected && (
-                        <Check size={15} className="text-violet-300" />
-                      )}
-                    </button>
-                  );
-                })}
+                      <h3 className="text-sm font-semibold text-white/70">
+                        {category.category}
+                      </h3>
+                    </div>
+
+                    {/* Interests */}
+
+                    <div className="flex flex-wrap gap-2">
+                      {category.interests.map((interest) => {
+                        const isSelected = selectedInterests.includes(
+                          interest.name
+                        );
+
+                        return (
+                          <button
+                            key={interest.name}
+                            type="button"
+                            onClick={() => {
+                              setSelectedInterests((current) =>
+                                current.includes(interest.name)
+                                  ? current.filter(
+                                      (item) => item !== interest.name
+                                    )
+                                  : [...current, interest.name]
+                              );
+                            }}
+                            className={`rounded-xl border px-3 py-2 text-sm transition ${
+                              isSelected
+                                ? "border-violet-400/40 bg-violet-500/15 text-violet-200"
+                                : "border-white/[0.08] bg-white/[0.03] text-white/50 hover:border-violet-400/20 hover:bg-violet-500/[0.06] hover:text-white/80"
+                            }`}
+                          >
+                            <span className="mr-2">{interest.emoji}</span>
+
+                            {interest.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {selectedInterests.length >= 4 && (
@@ -838,157 +1029,165 @@ export default function ProfilePage() {
           </div>
 
           {/* RIGHT COLUMN / PREVIEW */}
-          <div className="h-fit xl:sticky xl:top-8">
-            <div className="overflow-hidden rounded-[32px] border border-violet-400/15 bg-gradient-to-br from-violet-500/[0.12] via-[#14131b] to-[#101015]">
-              <div className="border-b border-white/[0.07] p-6">
-                <div className="flex items-center gap-2 text-sm text-violet-300">
-                  <Sparkles size={16} />
-                  Live preview
-                </div>
-
-                <p className="mt-2 text-xs leading-relaxed text-white/35">
-                  This is roughly how your reveal could feel.
-                </p>
-              </div>
-
-              <div className="p-6">
-                <div className="relative">
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-3xl border border-white/[0.07] bg-gradient-to-br from-violet-500/20 to-purple-900/10">
-                    {photos[previewPhotoIndex] ? (
-                      <img
-                        src={photos[previewPhotoIndex]!}
-                        alt={`Profile preview ${previewPhotoIndex + 1}`}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center">
-                        <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-4xl font-semibold text-white/70">
-                          {avatarLetter}
-                        </div>
-                      </div>
-                    )}
-
-                    {photos.filter(Boolean).length > 0 && (
-                      <div className="absolute right-4 top-4 rounded-full border border-white/10 bg-black/50 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur-md">
-                        {previewPhotoIndex + 1}/
-                        {photos.filter(Boolean).length}
-                      </div>
-                    )}
-                  </div>
-
-                  {photos.filter(Boolean).length > 1 && (
-                    <div className="mt-4 flex gap-2">
-                      {photos.map((photo, index) => {
-                        if (!photo) return null;
-
-                        return (
-                          <button
-                            key={index}
-                            type="button"
-                            onClick={() => setPreviewPhotoIndex(index)}
-                            className={`relative aspect-square w-14 overflow-hidden rounded-xl border transition ${
-                              previewPhotoIndex === index
-                                ? "border-violet-400 ring-2 ring-violet-500/40"
-                                : "border-white/10 opacity-60 hover:border-white/30 hover:opacity-100"
-                            }`}
-                          >
-                            <img
-                              src={photo}
-                              alt={`Photo ${index + 1}`}
-                              className="h-full w-full object-cover"
-                            />
-
-                            {index === 0 && (
-                              <div className="absolute inset-x-0 bottom-0 bg-black/60 py-0.5 text-[8px] font-semibold text-white">
-                                MAIN
-                              </div>
-                            )}
-                          </button>
-                        );
-                      })}
+          <div className="xl:sticky xl:top-8 xl:max-h-[calc(100vh-4rem)]">
+            <div className="flex h-[calc(100vh-4rem)] flex-col">
+              <div className="premium-scrollbar min-h-0 flex-1 overflow-y-auto pr-2">
+                <div className="overflow-hidden rounded-[32px] border border-violet-400/15 bg-gradient-to-br from-violet-500/[0.12] via-[#14131b] to-[#101015]">
+                  <div className="border-b border-white/[0.07] p-6">
+                    <div className="flex items-center gap-2 text-sm text-violet-300">
+                      <Sparkles size={16} />
+                      Live preview
                     </div>
-                  )}
-                </div>
 
-                <div className="mt-6">
-                  <h3 className="text-2xl font-semibold">
-                    {firstName || "Your name"}
-                    {isAgeValid && age !== null ? `, ${age}` : ""}
-                  </h3>
-
-                  {location && (
-                    <div className="mt-2 flex items-center gap-2 text-sm text-white/40">
-                      <MapPin size={15} />
-                      {location}
-                    </div>
-                  )}
-
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    {selectedInterests.length > 0 ? (
-                      selectedInterests.map((interest) => {
-                        const item = interestsList.find(
-                          (item) => item.name === interest
-                        );
-
-                        return (
-                          <span
-                            key={interest}
-                            className="rounded-full border border-violet-400/20 bg-violet-500/10 px-3 py-1.5 text-xs text-violet-200"
-                          >
-                            {item?.emoji} {interest}
-                          </span>
-                        );
-                      })
-                    ) : (
-                      <span className="text-sm text-white/25">
-                        Your interests will appear here.
-                      </span>
-                    )}
-                  </div>
-
-                  {bio && (
-                    <p className="mt-6 text-sm leading-relaxed text-white/50">
-                      {bio}
+                    <p className="mt-2 text-xs leading-relaxed text-white/35">
+                      This is roughly how your reveal could feel.
                     </p>
-                  )}
+                  </div>
 
-                  {height && (
-                    <div className="mt-6 flex items-center gap-2 text-sm text-white/35">
-                      <Ruler size={15} />
-                      {height} cm
+                  <div className="p-6">
+                    <div className="relative">
+                      <div className="relative aspect-[4/5] overflow-hidden rounded-3xl border border-white/[0.07] bg-gradient-to-br from-violet-500/20 to-purple-900/10">
+                        {photos[previewPhotoIndex] ? (
+                          <img
+                            src={photos[previewPhotoIndex]!}
+                            alt={`Profile preview ${previewPhotoIndex + 1}`}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-4xl font-semibold text-white/70">
+                              {avatarLetter}
+                            </div>
+                          </div>
+                        )}
+
+                        {photos.filter(Boolean).length > 0 && (
+                          <div className="absolute right-4 top-4 rounded-full border border-white/10 bg-black/50 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur-md">
+                            {previewPhotoIndex + 1}/
+                            {photos.filter(Boolean).length}
+                          </div>
+                        )}
+                      </div>
+
+                      {photos.filter(Boolean).length > 1 && (
+                        <div className="mt-4 flex gap-2">
+                          {photos.map((photo, index) => {
+                            if (!photo) return null;
+
+                            return (
+                              <button
+                                key={index}
+                                type="button"
+                                onClick={() => setPreviewPhotoIndex(index)}
+                                className={`relative aspect-square w-14 overflow-hidden rounded-xl border transition ${
+                                  previewPhotoIndex === index
+                                    ? "border-violet-400 ring-2 ring-violet-500/40"
+                                    : "border-white/10 opacity-60 hover:border-white/30 hover:opacity-100"
+                                }`}
+                              >
+                                <img
+                                  src={photo}
+                                  alt={`Photo ${index + 1}`}
+                                  className="h-full w-full object-cover"
+                                />
+
+                                {index === 0 && (
+                                  <div className="absolute inset-x-0 bottom-0 bg-black/60 py-0.5 text-[8px] font-semibold text-white">
+                                    MAIN
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  )}
+
+                    <div className="mt-6">
+                      <h3 className="text-2xl font-semibold">
+                        {firstName || "Your name"}
+                        {isAgeValid && age !== null ? `, ${age}` : ""}
+                      </h3>
+
+                      {location && (
+                        <div className="mt-2 flex items-center gap-2 text-sm text-white/40">
+                          <MapPin size={15} />
+                          {location}
+                        </div>
+                      )}
+
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        {selectedInterests.length > 0 ? (
+                          selectedInterests.map((interest) => {
+                            const item = interestsList.find(
+                              (item) => item.name === interest
+                            );
+
+                            return (
+                              <span
+                                key={interest}
+                                className="rounded-full border border-violet-400/20 bg-violet-500/10 px-3 py-1.5 text-xs text-violet-200"
+                              >
+                                {item?.emoji} {interest}
+                              </span>
+                            );
+                          })
+                        ) : (
+                          <span className="text-sm text-white/25">
+                            Your interests will appear here.
+                          </span>
+                        )}
+                      </div>
+
+                      {bio && (
+                        <p className="mt-6 text-sm leading-relaxed text-white/50">
+                          {bio}
+                        </p>
+                      )}
+
+                      {height && (
+                        <div className="mt-6 flex items-center gap-2 text-sm text-white/35">
+                          <Ruler size={15} />
+                          {height} cm
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="sticky bottom-6 mt-5 z-20">
+                  <div className="rounded-[24px] border border-white/[0.08] bg-[#14131b]/95 p-3 shadow-2xl shadow-black/40 backdrop-blur-xl">
+                    <button
+                      type="button"
+                      onClick={handleSave}
+                      disabled={savingProfile || loadingProfile}
+                      className="flex w-full items-center justify-center gap-3 rounded-2xl bg-violet-500 px-6 py-4 font-medium transition hover:bg-violet-400 hover:shadow-lg hover:shadow-violet-500/20 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {savingProfile ? (
+                        <>
+                          <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                          Saving profile...
+                        </>
+                      ) : saved ? (
+                        <>
+                          <Check size={19} />
+                          Profile saved!
+                        </>
+                      ) : (
+                        <>
+                          Save changes
+                          <ChevronRight size={18} />
+                        </>
+                      )}
+                    </button>
+
+                    <p className="mt-3 text-center text-xs text-white/25">
+                      Your profile remains hidden until the reveal.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={savingProfile || loadingProfile}
-              className="mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-violet-500 px-6 py-4 font-medium transition hover:bg-violet-400 hover:shadow-lg hover:shadow-violet-500/20 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {savingProfile ? (
-                <>
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  Saving profile...
-                </>
-              ) : saved ? (
-                <>
-                  <Check size={19} />
-                  Profile saved!
-                </>
-              ) : (
-                <>
-                  Save changes
-                  <ChevronRight size={18} />
-                </>
-              )}
-            </button>
-
-            <p className="mt-4 text-center text-xs text-white/25">
-              Your profile remains hidden until the reveal.
-            </p>
           </div>
         </div>
       </div>

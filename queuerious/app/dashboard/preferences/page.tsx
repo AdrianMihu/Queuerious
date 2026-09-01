@@ -24,12 +24,16 @@ export default function PreferencesPage() {
   const [minAge, setMinAge] = useState(18);
   const [maxAge, setMaxAge] = useState(35);
 
-  const [locationPreference, setLocationPreference] =
-    useState("anywhere");
+  const [locationPreference, setLocationPreference] = useState("anywhere");
 
   const [loadingPreferences, setLoadingPreferences] = useState(true);
   const [savingPreferences, setSavingPreferences] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [searchingForError, setSearchingForError] = useState("");
+  const [lookingForError, setLookingForError] = useState("");
+  const [minAgeError, setMinAgeError] = useState("");
+  const [maxAgeError, setMaxAgeError] = useState("");
+  const [ageRangeError, setAgeRangeError] = useState("");
 
   useEffect(() => {
     async function loadPreferences() {
@@ -40,10 +44,7 @@ export default function PreferencesPage() {
         } = await supabase.auth.getUser();
 
         if (userError || !user) {
-          console.error(
-            "Could not get authenticated user:",
-            userError
-          );
+          console.error("Could not get authenticated user:", userError);
           return;
         }
 
@@ -66,9 +67,7 @@ export default function PreferencesPage() {
           Fallback-ul la vechiul looking_for există doar ca
           preferințele vechi să nu dispară după update.
         */
-        setSearchingFor(
-          data.searching_for ?? data.looking_for ?? []
-        );
+        setSearchingFor(data.searching_for ?? data.looking_for ?? []);
 
         /*
           Noul looking_for = Relationship / Friends
@@ -78,14 +77,9 @@ export default function PreferencesPage() {
         setMinAge(data.min_age ?? 18);
         setMaxAge(data.max_age ?? 35);
 
-        setLocationPreference(
-          data.location_preference ?? "anywhere"
-        );
+        setLocationPreference(data.location_preference ?? "anywhere");
       } catch (error) {
-        console.error(
-          "Unexpected error while loading preferences:",
-          error
-        );
+        console.error("Unexpected error while loading preferences:", error);
       } finally {
         setLoadingPreferences(false);
       }
@@ -95,6 +89,7 @@ export default function PreferencesPage() {
   }, []);
 
   function toggleSearchingFor(option: string) {
+    setSearchingForError("");
     setSearchingFor((current) => {
       if (current.includes(option)) {
         return current.filter((item) => item !== option);
@@ -105,6 +100,7 @@ export default function PreferencesPage() {
   }
 
   function toggleLookingFor(option: string) {
+    setLookingForError("");
     setLookingFor((current) => {
       if (current.includes(option)) {
         return current.filter((item) => item !== option);
@@ -117,30 +113,44 @@ export default function PreferencesPage() {
   async function handleSave() {
     setSaved(false);
 
+    setSearchingForError("");
+    setLookingForError("");
+    setMinAgeError("");
+    setMaxAgeError("");
+    setAgeRangeError("");
+
+    let hasError = false;
+
     if (searchingFor.length === 0) {
-      alert("Please select at least one option under Searching for.");
-      return;
+      setSearchingForError(
+        "Please select at least one person you'd like to meet."
+      );
+      hasError = true;
     }
 
     if (lookingFor.length === 0) {
-      alert("Please select what you're looking for.");
-      return;
+      setLookingForError(
+        "Please select what kind of connection you're looking for."
+      );
+      hasError = true;
     }
 
     if (minAge < 16 || minAge > 90) {
-      alert("Minimum age must be between 16 and 90.");
-      return;
+      setMinAgeError("Minimum age must be between 16 and 90.");
+      hasError = true;
     }
 
     if (maxAge < 16 || maxAge > 90) {
-      alert("Maximum age must be between 16 and 90.");
-      return;
+      setMaxAgeError("Maximum age must be between 16 and 90.");
+      hasError = true;
     }
 
     if (minAge > maxAge) {
-      alert("Minimum age cannot be higher than maximum age.");
-      return;
+      setAgeRangeError("Minimum age cannot be higher than maximum age.");
+      hasError = true;
     }
+
+    if (hasError) return;
 
     setSavingPreferences(true);
 
@@ -155,25 +165,23 @@ export default function PreferencesPage() {
         return;
       }
 
-      const { error } = await supabase
-        .from("preferences")
-        .upsert(
-          {
-            id: user.id,
+      const { error } = await supabase.from("preferences").upsert(
+        {
+          id: user.id,
 
-            searching_for: searchingFor,
-            looking_for_type: lookingFor,
+          searching_for: searchingFor,
+          looking_for_type: lookingFor,
 
-            min_age: minAge,
-            max_age: maxAge,
-            location_preference: locationPreference,
+          min_age: minAge,
+          max_age: maxAge,
+          location_preference: locationPreference,
 
-            updated_at: new Date().toISOString(),
-          },
-          {
-            onConflict: "id",
-          }
-        );
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "id",
+        }
+      );
 
       if (error) {
         console.error("Error saving preferences:", error);
@@ -187,10 +195,7 @@ export default function PreferencesPage() {
         setSaved(false);
       }, 3000);
     } catch (error) {
-      console.error(
-        "Unexpected error while saving preferences:",
-        error
-      );
+      console.error("Unexpected error while saving preferences:", error);
 
       alert("Something went wrong while saving your preferences.");
     } finally {
@@ -223,18 +228,19 @@ export default function PreferencesPage() {
         <div className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
           {/* LEFT SIDE */}
           <div className="space-y-6">
-
             {/* SEARCHING FOR */}
-            <section className="rounded-3xl border border-white/[0.08] bg-white/[0.025] p-6 backdrop-blur-xl">
+            <section
+              className={`rounded-3xl border bg-white/[0.025] p-6 backdrop-blur-xl ${
+                searchingForError ? "border-red-500/40" : "border-white/[0.08]"
+              }`}
+            >
               <div className="mb-6 flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-300">
                   <UserRound size={21} />
                 </div>
 
                 <div>
-                  <h2 className="font-semibold">
-                    Searching for
-                  </h2>
+                  <h2 className="font-semibold">Searching for</h2>
 
                   <p className="mt-1 text-sm text-white/35">
                     Choose who you&apos;d like to meet.
@@ -270,19 +276,24 @@ export default function PreferencesPage() {
                   );
                 })}
               </div>
+              {searchingForError && (
+                <p className="mt-4 text-sm text-red-400">{searchingForError}</p>
+              )}
             </section>
 
             {/* LOOKING FOR */}
-            <section className="rounded-3xl border border-white/[0.08] bg-white/[0.025] p-6 backdrop-blur-xl">
+            <section
+              className={`rounded-3xl border bg-white/[0.025] p-6 backdrop-blur-xl ${
+                lookingForError ? "border-red-500/40" : "border-white/[0.08]"
+              }`}
+            >
               <div className="mb-6 flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-pink-500/10 text-pink-300">
                   <Heart size={21} />
                 </div>
 
                 <div>
-                  <h2 className="font-semibold">
-                    Looking for
-                  </h2>
+                  <h2 className="font-semibold">Looking for</h2>
 
                   <p className="mt-1 text-sm text-white/35">
                     What kind of connection would you like to discover?
@@ -294,10 +305,7 @@ export default function PreferencesPage() {
                 {lookingForOptions.map((option) => {
                   const selected = lookingFor.includes(option);
 
-                  const Icon =
-                    option === "Relationship"
-                      ? Heart
-                      : UsersRound;
+                  const Icon = option === "Relationship" ? Heart : UsersRound;
 
                   return (
                     <button
@@ -330,14 +338,15 @@ export default function PreferencesPage() {
                   );
                 })}
               </div>
+              {lookingForError && (
+                <p className="mt-4 text-sm text-red-400">{lookingForError}</p>
+              )}
             </section>
 
             {/* AGE RANGE */}
             <section className="rounded-3xl border border-white/[0.08] bg-white/[0.025] p-6 backdrop-blur-xl">
               <div className="mb-6">
-                <h2 className="font-semibold">
-                  Age range
-                </h2>
+                <h2 className="font-semibold">Age range</h2>
 
                 <p className="mt-1 text-sm text-white/35">
                   Choose the age range you&apos;re comfortable with.
@@ -355,12 +364,18 @@ export default function PreferencesPage() {
                     min="16"
                     max="90"
                     value={minAge}
-                    onChange={(e) =>
-                      setMinAge(Number(e.target.value))
-                    }
-                    className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-lg font-medium text-white outline-none transition focus:border-violet-400/40 focus:bg-white/[0.05]"
+                    onChange={(e) => setMinAge(Number(e.target.value))}
+                    className={`w-full rounded-2xl border bg-white/[0.03] px-5 py-4 text-lg font-medium text-white outline-none transition focus:bg-white/[0.05] ${
+                      minAgeError || ageRangeError
+                        ? "border-red-500/50 focus:border-red-500/70"
+                        : "border-white/[0.08] focus:border-violet-400/40"
+                    }`}
                   />
                 </div>
+
+                {minAgeError && (
+                  <p className="mt-2 text-sm text-red-400">{minAgeError}</p>
+                )}
 
                 <div>
                   <label className="mb-2 block text-sm text-white/50">
@@ -372,24 +387,28 @@ export default function PreferencesPage() {
                     min="16"
                     max="90"
                     value={maxAge}
-                    onChange={(e) =>
-                      setMaxAge(Number(e.target.value))
-                    }
-                    className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-lg font-medium text-white outline-none transition focus:border-violet-400/40 focus:bg-white/[0.05]"
+                    onChange={(e) => setMaxAge(Number(e.target.value))}
+                    className={`w-full rounded-2xl border bg-white/[0.03] px-5 py-4 text-lg font-medium text-white outline-none transition focus:bg-white/[0.05] ${
+                      maxAgeError || ageRangeError
+                        ? "border-red-500/50 focus:border-red-500/70"
+                        : "border-white/[0.08] focus:border-violet-400/40"
+                    }`}
                   />
                 </div>
+                {maxAgeError && (
+                  <p className="mt-2 text-sm text-red-400">{maxAgeError}</p>
+                )}
               </div>
+
+              {ageRangeError && (
+                <p className="mt-4 text-sm text-red-400">{ageRangeError}</p>
+              )}
 
               <div className="mt-6 rounded-2xl border border-violet-500/10 bg-violet-500/[0.05] px-5 py-4">
                 <p className="text-sm text-violet-200/80">
                   You&apos;re looking for people between{" "}
-                  <span className="font-semibold text-white">
-                    {minAge}
-                  </span>{" "}
-                  and{" "}
-                  <span className="font-semibold text-white">
-                    {maxAge}
-                  </span>{" "}
+                  <span className="font-semibold text-white">{minAge}</span> and{" "}
+                  <span className="font-semibold text-white">{maxAge}</span>{" "}
                   years old.
                 </p>
               </div>
@@ -403,9 +422,7 @@ export default function PreferencesPage() {
                 </div>
 
                 <div>
-                  <h2 className="font-semibold">
-                    Location preference
-                  </h2>
+                  <h2 className="font-semibold">Location preference</h2>
 
                   <p className="mt-1 text-sm text-white/35">
                     Decide how far you&apos;d like to search.
@@ -416,9 +433,7 @@ export default function PreferencesPage() {
               <div className="space-y-3">
                 <button
                   type="button"
-                  onClick={() =>
-                    setLocationPreference("same_city")
-                  }
+                  onClick={() => setLocationPreference("same_city")}
                   className={`flex w-full items-center justify-between rounded-2xl border p-5 text-left transition ${
                     locationPreference === "same_city"
                       ? "border-violet-400/50 bg-violet-500/10"
@@ -426,9 +441,7 @@ export default function PreferencesPage() {
                   }`}
                 >
                   <div>
-                    <p className="font-medium">
-                      Same city
-                    </p>
+                    <p className="font-medium">Same city</p>
 
                     <p className="mt-1 text-sm text-white/35">
                       Meet people from your own city.
@@ -450,9 +463,7 @@ export default function PreferencesPage() {
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setLocationPreference("anywhere")
-                  }
+                  onClick={() => setLocationPreference("anywhere")}
                   className={`flex w-full items-center justify-between rounded-2xl border p-5 text-left transition ${
                     locationPreference === "anywhere"
                       ? "border-violet-400/50 bg-violet-500/10"
@@ -460,9 +471,7 @@ export default function PreferencesPage() {
                   }`}
                 >
                   <div>
-                    <p className="font-medium">
-                      Anywhere in Romania
-                    </p>
+                    <p className="font-medium">Anywhere in Romania</p>
 
                     <p className="mt-1 text-sm text-white/35">
                       Expand your queue across Romania.
@@ -497,8 +506,8 @@ export default function PreferencesPage() {
               </h2>
 
               <p className="mt-3 text-sm leading-6 text-white/40">
-                These preferences help Queuerious find people who
-                match what you&apos;re looking for.
+                These preferences help Queuerious find people who match what
+                you&apos;re looking for.
               </p>
             </div>
 
@@ -557,9 +566,7 @@ export default function PreferencesPage() {
             <button
               type="button"
               onClick={handleSave}
-              disabled={
-                savingPreferences || loadingPreferences
-              }
+              disabled={savingPreferences || loadingPreferences}
               className="mt-6 flex w-full items-center justify-center gap-3 rounded-2xl bg-violet-500 px-6 py-4 font-medium transition hover:bg-violet-400 hover:shadow-lg hover:shadow-violet-500/20 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {savingPreferences ? (

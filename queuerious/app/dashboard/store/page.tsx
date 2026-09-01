@@ -24,32 +24,33 @@ type ModalType =
 
 export default function StorePage() {
   const [selectedProduct, setSelectedProduct] = useState<ModalType>(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
 
   const [queueTokens, setQueueTokens] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
-  
+
     let channel: ReturnType<typeof supabase.channel> | null = null;
-  
+
     async function setupRealtime() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-  
+
       if (!user) return;
-  
+
       // 1. Load current tokens
       const { data, error } = await supabase
         .from("queue_tokens")
         .select("tokens")
         .eq("user_id", user.id)
         .single();
-  
+
       if (!error && data) {
         setQueueTokens(data.tokens);
       }
-  
+
       // 2. Create realtime channel
       channel = supabase
         .channel(`store-queue-tokens-${user.id}-${crypto.randomUUID()}`)
@@ -63,11 +64,11 @@ export default function StorePage() {
           },
           (payload) => {
             console.log("STORE QUEUE TOKEN EVENT:", payload);
-  
+
             const newData = payload.new as {
               tokens?: number;
             };
-  
+
             if (typeof newData.tokens === "number") {
               setQueueTokens(newData.tokens);
             }
@@ -77,9 +78,9 @@ export default function StorePage() {
           console.log("STORE QUEUE TOKEN STATUS:", status);
         });
     }
-  
+
     setupRealtime();
-  
+
     return () => {
       if (channel) {
         supabase.removeChannel(channel);
@@ -90,6 +91,55 @@ export default function StorePage() {
   const closeModal = () => {
     setSelectedProduct(null);
   };
+
+  async function activateSubscription(plan: "beyond" | "mind") {
+    setSubscriptionLoading(true);
+
+    try {
+      const supabase = createClient();
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.error("User not found:", userError);
+        return;
+      }
+
+      const { error } = await supabase.from("subscriptions").upsert(
+        {
+          user_id: user.id,
+          plan,
+          status: "active",
+          started_at: new Date().toISOString(),
+          cancelled_at: null,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "user_id",
+        }
+      );
+
+      if (error) {
+        console.error("Error activating subscription:", error);
+        return;
+      }
+
+      setSelectedProduct(null);
+
+      alert(
+        `Your Queuerious ${
+          plan === "beyond" ? "Beyond" : "Mind"
+        } subscription is now active!`
+      );
+    } catch (error) {
+      console.error("Unexpected subscription error:", error);
+    } finally {
+      setSubscriptionLoading(false);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-[#09090d] text-white">
@@ -317,38 +367,91 @@ export default function StorePage() {
         </div>
       </section>
 
-      {/* COMING SOON MODAL */}
+      {/* PRODUCT MODAL */}
       {selectedProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6 backdrop-blur-sm">
           <div className="relative w-full max-w-md rounded-[32px] border border-white/[0.10] bg-[#14141b] p-8 shadow-2xl shadow-black/70">
             <button
               type="button"
               onClick={closeModal}
-              className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-xl text-white/35 transition hover:bg-white/[0.06] hover:text-white"
+              disabled={subscriptionLoading}
+              className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-xl text-white/35 transition hover:bg-white/[0.06] hover:text-white disabled:opacity-40"
             >
               <X size={19} />
             </button>
 
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-300">
-              <Sparkles size={24} />
+              {selectedProduct === "Queuerious Mind" ? (
+                <Brain size={24} className="text-cyan-300" />
+              ) : (
+                <Sparkles size={24} />
+              )}
             </div>
 
-            <p className="mt-7 text-sm text-violet-300">COMING SOON</p>
+            {selectedProduct === "Queuerious Beyond" ||
+            selectedProduct === "Queuerious Mind" ? (
+              <>
+                <p className="mt-7 text-sm text-violet-300">
+                  MEMBERSHIP PREVIEW
+                </p>
 
-            <h2 className="mt-2 text-2xl font-semibold">{selectedProduct}</h2>
+                <h2 className="mt-2 text-2xl font-semibold">
+                  {selectedProduct}
+                </h2>
 
-            <p className="mt-4 leading-relaxed text-white/45">
-              Payments aren’t available yet, but this product is already waiting
-              in the Queuerious Store.
-            </p>
+                <p className="mt-4 leading-relaxed text-white/45">
+                  This subscription will become active immediately and renew
+                  automatically every month.
+                </p>
 
-            <button
-              type="button"
-              onClick={closeModal}
-              className="mt-8 w-full rounded-2xl bg-white/[0.06] px-5 py-3.5 text-sm font-medium transition hover:bg-white/[0.10]"
-            >
-              Got it
-            </button>
+                <div className="mt-8 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={closeModal}
+                    disabled={subscriptionLoading}
+                    className="flex-1 rounded-2xl bg-white/[0.06] px-5 py-3.5 text-sm font-medium transition hover:bg-white/[0.10] disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={subscriptionLoading}
+                    onClick={() =>
+                      activateSubscription(
+                        selectedProduct === "Queuerious Beyond"
+                          ? "beyond"
+                          : "mind"
+                      )
+                    }
+                    className="flex-1 rounded-2xl bg-violet-500 px-5 py-3.5 text-sm font-medium transition hover:bg-violet-400 disabled:opacity-60"
+                  >
+                    {subscriptionLoading ? "Activating..." : "Activate"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="mt-7 text-sm text-violet-300">COMING SOON</p>
+
+                <h2 className="mt-2 text-2xl font-semibold">
+                  {selectedProduct}
+                </h2>
+
+                <p className="mt-4 leading-relaxed text-white/45">
+                  Payments aren&apos;t available yet, but this product is
+                  already waiting in the Queuerious Store.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="mt-8 w-full rounded-2xl bg-white/[0.06] px-5 py-3.5 text-sm font-medium transition hover:bg-white/[0.10]"
+                >
+                  Got it
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

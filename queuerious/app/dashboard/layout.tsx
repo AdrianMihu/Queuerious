@@ -1,6 +1,9 @@
 import Link from "next/link";
 import DashboardSidebar from "./DashboardSidebar";
+import HeaderActions from "./HeaderActions";
+import Notifications from "./Notifications";
 import QueueTokens from "./QueueTokens";
+
 import {
   Bell,
   CircleUserRound,
@@ -46,19 +49,20 @@ export default async function DashboardLayout({
   const userId = data.claims?.sub;
 
   let queueTokens = 0;
+  let freeTokenClaimedAt: string | null = null;
 
-  if (typeof userId === "string") {
-    const { data: tokenData } = await supabase
-      .from("queue_tokens")
-      .select("tokens")
-      .eq("user_id", userId)
-      .single();
+  const { data: tokenData } = await supabase
+  .from("queue_tokens")
+  .select("tokens, free_token_claimed_at")
+  .eq("user_id", userId)
+  .single();
 
-    queueTokens = tokenData?.tokens ?? 0;
-  }
+queueTokens = tokenData?.tokens ?? 0;
+freeTokenClaimedAt =
+  tokenData?.free_token_claimed_at ?? null;
 
   return (
-    <main className="min-h-screen bg-[#09090d] text-white">
+    <main className="min-h-screen bg-[#f7f7fb] text-gray-900 dark:bg-[#09090d] dark:text-white">
       <div className="flex min-h-screen">
         {/* SIDEBAR */}
         <DashboardSidebar firstName={firstName} email={email} />
@@ -81,19 +85,21 @@ export default async function DashboardLayout({
             </div>
 
             <div className="ml-auto flex items-center gap-3">
-              {/* Queue tokens */}
               <QueueTokens
-  initialTokens={queueTokens}
-  userId={userId}
-/>
+                initialTokens={queueTokens}
+                initialFreeTokenClaimedAt={
+                  tokenData?.free_token_claimed_at ?? null
+                }
+                userId={userId}
+              />
 
-              <button className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.07] text-white/45 transition hover:bg-white/[0.05] hover:text-white">
-                <Bell size={18} />
-              </button>
-
-              <button className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.07] text-white/45 transition hover:bg-white/[0.05] hover:text-white">
-                <CircleUserRound size={19} />
-              </button>
+              {typeof userId === "string" && (
+                <HeaderActions
+                  firstName={firstName}
+                  email={email}
+                  userId={userId}
+                />
+              )}
             </div>
           </header>
 

@@ -19,35 +19,110 @@ type QueueType = "standard" | "priority" | null;
 export default function QueuemitmentPage() {
   const router = useRouter();
 
-  const [selectedQueue, setSelectedQueue] =
-    useState<QueueType>(null);
+  const [selectedQueue, setSelectedQueue] = useState<QueueType>(null);
 
-  const [isEnteringQueue, setIsEnteringQueue] =
+  const [isEnteringQueue, setIsEnteringQueue] = useState(false);
+
+  const [showNoTokensModal, setShowNoTokensModal] = useState(false);
+
+  const [showProfileRequiredModal, setShowProfileRequiredModal] =
     useState(false);
 
-    const [showNoTokensModal, setShowNoTokensModal] =
-  useState(false);
+  const [showPreferencesRequiredModal, setShowPreferencesRequiredModal] =
+    useState(false);
 
   const hasPriorityAccess = false;
 
   const handleEnterQueue = async () => {
     if (!selectedQueue || isEnteringQueue) return;
-  
+
     try {
       setIsEnteringQueue(true);
-  
+
       const supabase = createClient();
-  
+
       const {
         data: { user },
         error: authError,
       } = await supabase.auth.getUser();
-  
+
       if (authError || !user) {
         console.error("User not authenticated:", authError);
         return;
       }
-  
+
+      /*
+  PROFILE + PREFERENCES CHECK
+
+  The user must complete their profile location
+  and all matchmaking preferences before entering
+  the queue.
+*/
+
+      const [
+        { data: profile, error: profileError },
+        { data: preferences, error: preferencesError },
+      ] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("location")
+          .eq("id", user.id)
+          .maybeSingle(),
+
+        supabase
+          .from("preferences")
+          .select(
+            "looking_for_type, searching_for, min_age, max_age, location_preference"
+          )
+          .eq("id", user.id)
+          .maybeSingle(),
+      ]);
+
+      if (profileError) {
+        console.error("Error checking profile:", profileError);
+
+        alert("We couldn't check your profile. Please try again.");
+
+        return;
+      }
+
+      if (preferencesError) {
+        console.error("Error checking preferences:", preferencesError);
+
+        alert("We couldn't check your preferences. Please try again.");
+
+        return;
+      }
+
+      /*
+  LOCATION IS REQUIRED
+*/
+
+      if (!profile?.location) {
+        setShowProfileRequiredModal(true);
+        return;
+      }
+
+      /*
+  ALL PREFERENCES ARE REQUIRED
+*/
+
+      if (
+        !preferences ||
+        !preferences.looking_for_type ||
+        preferences.looking_for_type.length === 0 ||
+        preferences.min_age === null ||
+        preferences.min_age === undefined ||
+        preferences.max_age === null ||
+        preferences.max_age === undefined ||
+        !preferences.location_preference
+      ) {
+        setShowPreferencesRequiredModal(true);
+        return;
+
+        return;
+      }
+
       /*
         Check if the user has at least
         one queue token available.
@@ -57,44 +132,43 @@ export default function QueuemitmentPage() {
         .select("tokens")
         .eq("user_id", user.id)
         .maybeSingle();
-  
+
       if (tokenError) {
         console.error("Error checking queue tokens:", tokenError);
         alert("We couldn't check your queue tokens. Please try again.");
         return;
       }
-  
+
       if (!tokenData || tokenData.tokens < 1) {
         setShowNoTokensModal(true);
         return;
       }
-  
+
       /*
         Check if the user already has
         an active queue entry.
       */
-      const { data: existingEntry, error: existingError } =
-        await supabase
-          .from("queue_entries")
-          .select("id, status")
-          .eq("user_id", user.id)
-          .in("status", ["waiting"])
-          .maybeSingle();
-  
+      const { data: existingEntry, error: existingError } = await supabase
+        .from("queue_entries")
+        .select("id, status")
+        .eq("user_id", user.id)
+        .in("status", ["waiting"])
+        .maybeSingle();
+
       if (existingError) {
         console.error("Error checking queue entry");
         console.error("message:", existingError.message);
         console.error("details:", existingError.details);
         console.error("hint:", existingError.hint);
         console.error("code:", existingError.code);
-  
+
         alert(
           `Error checking queue entry:\n\n${existingError.message}\nCode: ${existingError.code}`
         );
-  
+
         return;
       }
-  
+
       /*
         If already in an active queue,
         just continue to waiting.
@@ -103,7 +177,7 @@ export default function QueuemitmentPage() {
         router.push("/dashboard/queuemitment/waiting");
         return;
       }
-  
+
       /*
         Create a new queue entry.
   
@@ -119,30 +193,25 @@ export default function QueuemitmentPage() {
           queue_type: selectedQueue,
           status: "waiting",
         });
-  
+
       if (insertError) {
         console.error("QUEUE INSERT ERROR");
         console.error("message:", insertError.message);
         console.error("details:", insertError.details);
         console.error("hint:", insertError.hint);
         console.error("code:", insertError.code);
-  
+
         alert(`Could not enter the queue: ${insertError.message}`);
         return;
       }
-  
+
       router.push("/dashboard/queuemitment/waiting");
     } catch (error) {
-      console.error(
-        "Unexpected error entering queue:",
-        error
-      );
+      console.error("Unexpected error entering queue:", error);
     } finally {
       setIsEnteringQueue(false);
     }
   };
-
-  
 
   /*
     TEMPORARY FOR MVP
@@ -150,7 +219,6 @@ export default function QueuemitmentPage() {
     Later this will come from the user's
     active subscription in Supabase.
   */
-
 
   return (
     <section className="flex-1 px-6 py-10 lg:px-10 xl:px-16">
@@ -360,22 +428,20 @@ export default function QueuemitmentPage() {
               </div>
 
               <button
-  type="button"
-  onClick={handleEnterQueue}
-  disabled={isEnteringQueue}
-  className="inline-flex shrink-0 items-center justify-center gap-3 rounded-2xl bg-violet-500 px-8 py-5 text-lg font-medium transition hover:bg-violet-400 hover:shadow-xl hover:shadow-violet-500/20 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
->
-  <Zap
-    size={20}
-    className={isEnteringQueue ? "animate-pulse" : ""}
-  />
+                type="button"
+                onClick={handleEnterQueue}
+                disabled={isEnteringQueue}
+                className="inline-flex shrink-0 items-center justify-center gap-3 rounded-2xl bg-violet-500 px-8 py-5 text-lg font-medium transition hover:bg-violet-400 hover:shadow-xl hover:shadow-violet-500/20 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Zap
+                  size={20}
+                  className={isEnteringQueue ? "animate-pulse" : ""}
+                />
 
-  {isEnteringQueue
-    ? "Entering Queue..."
-    : "Enter the Queue"}
+                {isEnteringQueue ? "Entering Queue..." : "Enter the Queue"}
 
-  {!isEnteringQueue && <ChevronRight size={20} />}
-</button>
+                {!isEnteringQueue && <ChevronRight size={20} />}
+              </button>
             </div>
           </div>
         )}
@@ -390,65 +456,168 @@ export default function QueuemitmentPage() {
         </div>
       </div>
       {showNoTokensModal && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-    {/* Backdrop */}
-    <div
-      className="absolute inset-0 bg-[#09090d]/80 backdrop-blur-md"
-      onClick={() => setShowNoTokensModal(false)}
-    />
-
-    {/* Modal */}
-    <div className="relative w-full max-w-md overflow-hidden rounded-[32px] border border-violet-400/20 bg-[#111118] p-8 shadow-2xl shadow-black/60">
-      
-      {/* Background glow */}
-      <div className="pointer-events-none absolute -right-24 -top-24 h-56 w-56 rounded-full bg-violet-500/20 blur-[100px]" />
-
-      <div className="relative">
-        {/* Icon */}
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/10">
-          <Zap
-            size={28}
-            className="text-violet-300"
-          />
-        </div>
-
-        {/* Content */}
-        <p className="mt-8 text-sm font-medium uppercase tracking-[0.18em] text-violet-300">
-          No queues available
-        </p>
-
-        <h2 className="mt-3 text-3xl font-semibold tracking-tight">
-          You’re out of queue tokens.
-        </h2>
-
-        <p className="mt-4 leading-relaxed text-white/45">
-          You need at least one queue token to enter Queuemitment.
-          Get more queues and come back when you’re ready for your next
-          conversation.
-        </p>
-
-        {/* Actions */}
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <button
-            type="button"
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-[#09090d]/80 backdrop-blur-md"
             onClick={() => setShowNoTokensModal(false)}
-            className="flex-1 rounded-2xl border border-white/[0.08] bg-white/[0.04] px-5 py-3.5 text-sm font-medium text-white/70 transition hover:bg-white/[0.07] hover:text-white"
-          >
-            Maybe later
-          </button>
+          />
 
-          <Link
-            href="/dashboard/store"
-            className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-violet-500 px-5 py-3.5 text-sm font-medium text-white transition hover:bg-violet-400 hover:shadow-lg hover:shadow-violet-500/20"
-          >
-            Get more queues
-            <ArrowRight size={17} />
-          </Link>
+          {/* Modal */}
+          <div className="relative w-full max-w-md overflow-hidden rounded-[32px] border border-violet-400/20 bg-[#111118] p-8 shadow-2xl shadow-black/60">
+            {/* Background glow */}
+            <div className="pointer-events-none absolute -right-24 -top-24 h-56 w-56 rounded-full bg-violet-500/20 blur-[100px]" />
+
+            <div className="relative">
+              {/* Icon */}
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/10">
+                <Zap size={28} className="text-violet-300" />
+              </div>
+
+              {/* Content */}
+              <p className="mt-8 text-sm font-medium uppercase tracking-[0.18em] text-violet-300">
+                No queues available
+              </p>
+
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight">
+                You’re out of queue tokens.
+              </h2>
+
+              <p className="mt-4 leading-relaxed text-white/45">
+                You need at least one queue token to enter Queuemitment. Get
+                more queues and come back when you’re ready for your next
+                conversation.
+              </p>
+
+              {/* Actions */}
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setShowNoTokensModal(false)}
+                  className="flex-1 rounded-2xl border border-white/[0.08] bg-white/[0.04] px-5 py-3.5 text-sm font-medium text-white/70 transition hover:bg-white/[0.07] hover:text-white"
+                >
+                  Maybe later
+                </button>
+
+                <Link
+                  href="/dashboard/store"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-violet-500 px-5 py-3.5 text-sm font-medium text-white transition hover:bg-violet-400 hover:shadow-lg hover:shadow-violet-500/20"
+                >
+                  Get more queues
+                  <ArrowRight size={17} />
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  </div>
-)}
+      )}
+      {showProfileRequiredModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-[#09090d]/80 backdrop-blur-md"
+            onClick={() => setShowProfileRequiredModal(false)}
+          />
+
+          {/* Modal */}
+          <div className="relative w-full max-w-md overflow-hidden rounded-[32px] border border-violet-400/20 bg-[#111118] p-8 shadow-2xl shadow-black/60">
+            {/* Background glow */}
+            <div className="pointer-events-none absolute -right-24 -top-24 h-56 w-56 rounded-full bg-violet-500/20 blur-[100px]" />
+
+            <div className="relative">
+              {/* Icon */}
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/10">
+                <Sparkles size={28} className="text-violet-300" />
+              </div>
+
+              <p className="mt-8 text-sm font-medium uppercase tracking-[0.18em] text-violet-300">
+                Profile incomplete
+              </p>
+
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight">
+                Your profile isn&apos;t ready yet.
+              </h2>
+
+              <p className="mt-4 leading-relaxed text-white/45">
+                Before entering Queuemitment, please set your location. We need
+                it to find compatible people for you.
+              </p>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setShowProfileRequiredModal(false)}
+                  className="flex-1 rounded-2xl border border-white/[0.08] bg-white/[0.04] px-5 py-3.5 text-sm font-medium text-white/70 transition hover:bg-white/[0.07] hover:text-white"
+                >
+                  Maybe later
+                </button>
+
+                <Link
+                  href="/dashboard/profile"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-violet-500 px-5 py-3.5 text-sm font-medium text-white transition hover:bg-violet-400 hover:shadow-lg hover:shadow-violet-500/20"
+                >
+                  Complete profile
+                  <ArrowRight size={17} />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {showPreferencesRequiredModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-[#09090d]/80 backdrop-blur-md"
+            onClick={() => setShowPreferencesRequiredModal(false)}
+          />
+
+          {/* Modal */}
+          <div className="relative w-full max-w-md overflow-hidden rounded-[32px] border border-violet-400/20 bg-[#111118] p-8 shadow-2xl shadow-black/60">
+            {/* Background glow */}
+            <div className="pointer-events-none absolute -right-24 -top-24 h-56 w-56 rounded-full bg-violet-500/20 blur-[100px]" />
+
+            <div className="relative">
+              {/* Icon */}
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/10">
+                <Zap size={28} className="text-violet-300" />
+              </div>
+
+              <p className="mt-8 text-sm font-medium uppercase tracking-[0.18em] text-violet-300">
+                Preferences incomplete
+              </p>
+
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight">
+                Tell us who you&apos;re looking for.
+              </h2>
+
+              <p className="mt-4 leading-relaxed text-white/45">
+                Complete your matchmaking preferences before entering
+                Queuemitment. This helps us find people who are actually
+                compatible with you.
+              </p>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setShowPreferencesRequiredModal(false)}
+                  className="flex-1 rounded-2xl border border-white/[0.08] bg-white/[0.04] px-5 py-3.5 text-sm font-medium text-white/70 transition hover:bg-white/[0.07] hover:text-white"
+                >
+                  Maybe later
+                </button>
+
+                <Link
+                  href="/dashboard/preferences"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-violet-500 px-5 py-3.5 text-sm font-medium text-white transition hover:bg-violet-400 hover:shadow-lg hover:shadow-violet-500/20"
+                >
+                  Set preferences
+                  <ArrowRight size={17} />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

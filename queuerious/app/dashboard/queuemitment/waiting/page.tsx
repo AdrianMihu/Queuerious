@@ -19,11 +19,13 @@ const prompts = [
 ];
 
 export default function WaitingPage() {
+
+
   const router = useRouter();
 
   const [queueState, setQueueState] = useState<
-    "searching" | "matched" | "countdown"
-  >("searching");
+  "searching" | "matched" | "countdown" | "failed"
+>("searching");
 
   const [promptIndex, setPromptIndex] = useState(0);
   const [countdown, setCountdown] = useState(3);
@@ -31,6 +33,64 @@ export default function WaitingPage() {
   const conversationIdRef = useRef<string | null>(null);
 const queueEntryIdRef = useRef<string | null>(null);
 const isCheckingRef = useRef(false);
+
+/*
+  HANDLE TAB / BROWSER CLOSE DURING COUNTDOWN
+*/
+
+/*
+  HANDLE LEAVING THE QUEUE / PAGE CLOSE
+*/
+
+useEffect(() => {
+  if (
+    queueState !== "matched" &&
+    queueState !== "countdown"
+  ) {
+    return;
+  }
+
+  const handlePageHide = () => {
+    const conversationId = conversationIdRef.current;
+
+    if (!conversationId) return;
+
+    const data = new Blob(
+      [
+        JSON.stringify({
+          conversationId,
+        }),
+      ],
+      {
+        type: "application/json",
+      }
+    );
+
+    navigator.sendBeacon(
+      "/api/cancel-ready",
+      data
+    );
+  };
+
+  window.addEventListener("pagehide", handlePageHide);
+
+  return () => {
+    window.removeEventListener(
+      "pagehide",
+      handlePageHide
+    );
+  };
+}, [queueState]);
+
+useEffect(() => {
+  if (queueState !== "failed") return;
+
+  const timer = setTimeout(() => {
+    router.push("/dashboard/queuemitment");
+  }, 4000);
+
+  return () => clearTimeout(timer);
+}, [queueState, router]);
 
   /*
     PROMPT ROTATION
@@ -47,6 +107,102 @@ const isCheckingRef = useRef(false);
 
     return () => clearInterval(interval);
   }, [queueState]);
+
+  /*
+  HEARTBEAT DURING COUNTDOWN
+*/
+
+useEffect(() => {
+  if (queueState !== "countdown") return;
+
+  const supabase = createClient();
+
+  let heartbeat: ReturnType<typeof setInterval> | undefined;
+
+  let sendHeartbeat: (() => Promise<void>) | undefined;
+
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === "visible") {
+      sendHeartbeat?.();
+    }
+  };
+
+  const startHeartbeat = async () => {
+    const conversationId = conversationIdRef.current;
+
+    if (!conversationId) return;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    const { data: conversation, error } = await supabase
+      .from("queuemitment_conversations")
+      .select("user_one_id, user_two_id")
+      .eq("id", conversationId)
+      .single();
+
+    if (error || !conversation) {
+      console.error(
+        "Error loading conversation for heartbeat:",
+        error
+      );
+      return;
+    }
+
+    const lastSeenColumn =
+      conversation.user_one_id === user.id
+        ? "user_one_last_seen"
+        : "user_two_last_seen";
+
+    sendHeartbeat = async () => {
+      const { error: heartbeatError } = await supabase
+        .from("queuemitment_conversations")
+        .update({
+          [lastSeenColumn]: new Date().toISOString(),
+        })
+        .eq("id", conversationId);
+
+      if (heartbeatError) {
+        console.error("Heartbeat error:", heartbeatError);
+      }
+    };
+
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange
+    );
+
+    /*
+      Send one immediately
+    */
+
+    await sendHeartbeat();
+
+    /*
+      Then keep updating
+    */
+
+    heartbeat = setInterval(() => {
+      sendHeartbeat?.();
+    }, 3000);
+  };
+
+  startHeartbeat();
+
+  return () => {
+    document.removeEventListener(
+      "visibilitychange",
+      handleVisibilityChange
+    );
+
+    if (heartbeat) {
+      clearInterval(heartbeat);
+    }
+  };
+}, [queueState]);
 
   /*
     REAL MATCHMAKING HEARTBEAT
@@ -126,6 +282,8 @@ console.error("code:", insertError?.code);
 console.error(
   JSON.stringify(insertError, null, 2)
 );
+
+
     
           return;
         }
@@ -285,6 +443,105 @@ console.error(
   }, [queueState]);
 
   /*
+  MARK USER AS READY
+*/
+
+useEffect(() => {
+  if (queueState !== "countdown") return;
+
+  const markReady = async () => {
+    const conversationId = conversationIdRef.current;
+
+    if (!conversationId) return;
+
+    const supabase = createClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    const { data: conversation, error } = await supabase
+      .from("queuemitment_conversations")
+      .select("user_one_id, user_two_id")
+      .eq("id", conversationId)
+      .single();
+
+    if (error || !conversation) {
+      console.error("Error loading conversation:", error);
+      return;
+    }
+
+    const readyColumn =
+      conversation.user_one_id === user.id
+        ? "user_one_ready"
+        : "user_two_ready";
+
+    const { error: updateError } = await supabase
+      .from("queuemitment_conversations")
+      .update({
+        [readyColumn]: true,
+      })
+      .eq("id", conversationId);
+
+    if (updateError) {
+      console.error("Error marking user as ready:", updateError);
+    }
+  };
+
+  markReady();
+}, [queueState]);
+
+/*
+  CANCEL READY STATUS WHEN LEAVING
+*/
+
+useEffect(() => {
+  if (queueState !== "countdown") return;
+
+  const supabase = createClient();
+
+  const markNotReady = async () => {
+    const conversationId = conversationIdRef.current;
+
+    if (!conversationId) return;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    const { data: conversation } = await supabase
+      .from("queuemitment_conversations")
+      .select("user_one_id, user_two_id")
+      .eq("id", conversationId)
+      .single();
+
+    if (!conversation) return;
+
+    const readyColumn =
+      conversation.user_one_id === user.id
+        ? "user_one_ready"
+        : "user_two_ready";
+
+    await supabase
+      .from("queuemitment_conversations")
+      .update({
+        [readyColumn]: false,
+      })
+      .eq("id", conversationId);
+  };
+
+  return () => {
+    markNotReady();
+  };
+}, [queueState]);
+
+
+
+  /*
     COUNTDOWN
   */
 
@@ -294,28 +551,223 @@ console.error(
       if (countdown === 0) {
         const enterConversation = async () => {
           const conversationId = conversationIdRef.current;
-    
+        
           if (!conversationId) {
             console.error("No conversation ID found.");
             return;
           }
-    
+        
           const supabase = createClient();
-    
+
+          /*
+  FINAL HANDSHAKE
+
+  Confirm that this user is still here
+  at the exact moment the countdown ends.
+*/
+
+const {
+  data: { user },
+} = await supabase.auth.getUser();
+
+if (!user) {
+  setQueueState("failed");
+  return;
+}
+
+const { data: conversationPosition, error: positionError } =
+  await supabase
+    .from("queuemitment_conversations")
+    .select("user_one_id, user_two_id")
+    .eq("id", conversationId)
+    .single();
+
+if (positionError || !conversationPosition) {
+  console.error(
+    "Error finding user position:",
+    positionError
+  );
+
+  setQueueState("failed");
+  return;
+}
+
+const { data: bothUsersReady, error: finalReadyError } =
+  await supabase.rpc(
+    "mark_queuemitment_final_ready",
+    {
+      p_conversation_id: conversationId,
+    }
+  );
+
+if (finalReadyError) {
+  console.error(
+    "Error during final handshake:",
+    finalReadyError
+  );
+
+  setQueueState("failed");
+  return;
+}
+
+/*
+  The other user may still be finishing
+  their countdown.
+
+  Wait briefly for them.
+*/
+
+if (!bothUsersReady) {
+  let connected = false;
+
+  for (let attempt = 0; attempt < 10; attempt++) {
+    await new Promise((resolve) =>
+      setTimeout(resolve, 500)
+    );
+
+    const { data: latestConversation } = await supabase
+      .from("queuemitment_conversations")
+      .select(
+        "user_one_final_ready, user_two_final_ready"
+      )
+      .eq("id", conversationId)
+      .single();
+
+    if (
+      latestConversation?.user_one_final_ready &&
+      latestConversation?.user_two_final_ready
+    ) {
+      connected = true;
+      break;
+    }
+  }
+
+  if (!connected) {
+    setQueueState("failed");
+    return;
+  }
+}
+        
+          /*
+            Get the current conversation state
+          */
+        
+          const { data: conversation, error: conversationError } =
+            await supabase
+              .from("queuemitment_conversations")
+              .select(
+                "user_one_ready, user_two_ready, user_one_final_ready, user_two_final_ready"
+              )
+              .eq("id", conversationId)
+              .single();
+        
+          if (conversationError || !conversation) {
+            console.error(
+              "Error checking ready status:",
+              conversationError
+            );
+        
+            return;
+          }
+        
+          /*
+            BOTH USERS MUST STILL BE READY
+          */
+        
+            if (
+              !conversation.user_one_ready ||
+              !conversation.user_two_ready
+            ) {
+              console.log(
+                "The other person could not connect."
+              );
+            
+              setQueueState("failed");
+            
+              return;
+            }
+
+ /*
+  WAIT BRIEFLY FOR BOTH HEARTBEATS
+
+  Background tabs can have delayed timers,
+  so we don't fail instantly./*
+  FINAL HANDSHAKE
+
+  Wait for both users to reach the exact
+  end of the countdown.
+*/
+
+let bothUsersFinalReady = false;
+
+for (let attempt = 0; attempt < 10; attempt++) {
+  const { data: latestConversation, error: finalCheckError } =
+    await supabase
+      .from("queuemitment_conversations")
+      .select(
+        "user_one_final_ready, user_two_final_ready"
+      )
+      .eq("id", conversationId)
+      .single();
+
+  if (finalCheckError) {
+    console.error(
+      "Error checking final ready status:",
+      finalCheckError
+    );
+  }
+
+  if (
+    latestConversation?.user_one_final_ready &&
+    latestConversation?.user_two_final_ready
+  ) {
+    bothUsersFinalReady = true;
+    break;
+  }
+
+  /*
+    Wait briefly for the other user to
+    finish their countdown.
+  */
+
+  await new Promise((resolve) =>
+    setTimeout(resolve, 500)
+  );
+}
+
+if (!bothUsersFinalReady) {
+  console.log(
+    "The other person could not connect."
+  );
+
+  setQueueState("failed");
+
+  return;
+}
+        
+          /*
+            Both users are here → consume token
+          */
+        
           const { error } = await supabase.rpc(
             "consume_queue_token"
           );
-    
+        
           if (error) {
             console.error(
               "Error consuming queue token:",
               error
             );
-    
+        
             router.push("/dashboard/queuemitment");
+        
             return;
           }
-    
+        
+          /*
+            ENTER CHAT 🔥
+          */
+        
           router.push(
             `/dashboard/queuemitment/chat/${conversationId}`
           );
@@ -473,6 +925,41 @@ console.error(
 
           </div>
         )}
+
+        {/* FAILED TO CONNECT */}
+
+{queueState === "failed" && (
+  <div className="relative overflow-hidden rounded-[36px] border border-violet-400/20 bg-gradient-to-br from-[#181321] via-[#121218] to-[#101015] p-10 shadow-2xl shadow-violet-950/20 sm:p-16">
+    
+    <div className="absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-500/10 blur-[120px]" />
+
+    <div className="relative flex flex-col items-center text-center">
+      
+      <div className="flex h-24 w-24 items-center justify-center rounded-3xl border border-violet-400/20 bg-violet-500/10 text-violet-300 shadow-xl shadow-violet-950/30">
+        <Sparkles size={38} />
+      </div>
+
+      <p className="mt-8 text-sm font-medium tracking-[0.2em] text-violet-300">
+        CONNECTION INTERRUPTED
+      </p>
+
+      <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
+        They couldn&apos;t connect.
+      </h1>
+
+      <p className="mt-6 max-w-lg text-lg leading-relaxed text-white/45">
+        The other person left before the conversation could begin.
+        No worries — we&apos;ll get you back to Queuemitment.
+      </p>
+
+      <div className="mt-10 flex items-center gap-2 text-sm text-white/30">
+        <LoaderCircle size={16} className="animate-spin" />
+        Returning you shortly...
+      </div>
+
+    </div>
+  </div>
+)}
 
       </div>
     </section>
