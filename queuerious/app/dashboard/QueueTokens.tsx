@@ -27,6 +27,8 @@ export default function QueueTokens({
         .eq("user_id", userId)
         .single();
   
+      console.log("FETCHED TOKENS:", data);
+  
       if (!error && data) {
         setQueueTokens(data.tokens);
       }
