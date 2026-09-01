@@ -92,7 +92,14 @@ export default function StorePage() {
     setSelectedProduct(null);
   };
 
-  async function activateSubscription(plan: "beyond" | "mind") {
+  async function startCheckout(
+    product:
+      | "queuetie"
+      | "queuemunication"
+      | "queuenquistador"
+      | "beyond"
+      | "mind"
+  ) {
     setSubscriptionLoading(true);
 
     try {
@@ -104,38 +111,35 @@ export default function StorePage() {
       } = await supabase.auth.getUser();
 
       if (userError || !user) {
-        console.error("User not found:", userError);
+        alert("You must be logged in to make a purchase.");
         return;
       }
 
-      const { error } = await supabase.from("subscriptions").upsert(
-        {
-          user_id: user.id,
-          plan,
-          status: "active",
-          started_at: new Date().toISOString(),
-          cancelled_at: null,
-          updated_at: new Date().toISOString(),
+      const response = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-        {
-          onConflict: "user_id",
-        }
-      );
+        body: JSON.stringify({
+          product,
+          userId: user.id,
+        }),
+      });
 
-      if (error) {
-        console.error("Error activating subscription:", error);
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Checkout error:", data);
+        alert(data.error || "Unable to start checkout.");
         return;
       }
 
-      setSelectedProduct(null);
-
-      alert(
-        `Your Queuerious ${
-          plan === "beyond" ? "Beyond" : "Mind"
-        } subscription is now active!`
-      );
+      if (data.url) {
+        window.location.href = data.url;
+      }
     } catch (error) {
-      console.error("Unexpected subscription error:", error);
+      console.error("Unexpected checkout error:", error);
+      alert("Something went wrong while starting checkout.");
     } finally {
       setSubscriptionLoading(false);
     }
@@ -400,8 +404,8 @@ export default function StorePage() {
                 </h2>
 
                 <p className="mt-4 leading-relaxed text-white/45">
-                  This subscription will become active immediately and renew
-                  automatically every month.
+                  Continue securely to Stripe to activate your subscription.
+                  Your membership will renew automatically every month.
                 </p>
 
                 <div className="mt-8 flex gap-3">
@@ -418,7 +422,7 @@ export default function StorePage() {
                     type="button"
                     disabled={subscriptionLoading}
                     onClick={() =>
-                      activateSubscription(
+                      startCheckout(
                         selectedProduct === "Queuerious Beyond"
                           ? "beyond"
                           : "mind"
@@ -432,24 +436,50 @@ export default function StorePage() {
               </>
             ) : (
               <>
-                <p className="mt-7 text-sm text-violet-300">COMING SOON</p>
+                <p className="mt-7 text-sm text-violet-300">QUEUE PACK</p>
 
                 <h2 className="mt-2 text-2xl font-semibold">
                   {selectedProduct}
                 </h2>
 
                 <p className="mt-4 leading-relaxed text-white/45">
-                  Payments aren&apos;t available yet, but this product is
-                  already waiting in the Queuerious Store.
+                  Complete your purchase securely with Stripe. Your queue tokens
+                  will be added after payment is confirmed.
                 </p>
 
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="mt-8 w-full rounded-2xl bg-white/[0.06] px-5 py-3.5 text-sm font-medium transition hover:bg-white/[0.10]"
-                >
-                  Got it
-                </button>
+                <div className="mt-8 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={closeModal}
+                    disabled={subscriptionLoading}
+                    className="flex-1 rounded-2xl bg-white/[0.06] px-5 py-3.5 text-sm font-medium transition hover:bg-white/[0.10] disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={subscriptionLoading}
+                    onClick={() => {
+                      if (selectedProduct === "Queuetie Pack") {
+                        startCheckout("queuetie");
+                      }
+
+                      if (selectedProduct === "Queuemunication Pack") {
+                        startCheckout("queuemunication");
+                      }
+
+                      if (selectedProduct === "Queuenquistador Pack") {
+                        startCheckout("queuenquistador");
+                      }
+                    }}
+                    className="flex-1 rounded-2xl bg-violet-500 px-5 py-3.5 text-sm font-medium transition hover:bg-violet-400 disabled:opacity-60"
+                  >
+                    {subscriptionLoading
+                      ? "Redirecting..."
+                      : "Continue to payment"}
+                  </button>
+                </div>
               </>
             )}
           </div>
