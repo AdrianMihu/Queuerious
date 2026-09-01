@@ -28,6 +28,7 @@ export default function QueueTokens({
         .single();
   
       console.log("FETCHED TOKENS:", data);
+      console.log("FETCHED TOKENS:", data);
   
       if (!error && data) {
         setQueueTokens(data.tokens);
