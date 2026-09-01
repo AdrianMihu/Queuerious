@@ -115,7 +115,7 @@ export default function StorePage() {
         return;
       }
 
-      const response = await fetch("/api/stripe/checkout", {
+      const response = await fetch("/api/delete-account/stripe/checkout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -126,9 +126,26 @@ export default function StorePage() {
         }),
       });
 
-      const data = await response.json();
+      const responseText = await response.text();
 
-      if (!response.ok) {
+console.log("Checkout status:", response.status);
+console.log("Checkout response:", responseText);
+
+let data;
+
+try {
+  data = JSON.parse(responseText);
+} catch {
+  console.error("Response was not JSON:", responseText);
+
+  alert(
+    `Checkout returned an unexpected response. Status: ${response.status}`
+  );
+
+  return;
+}
+
+if (!response.ok) {
         console.error("Checkout error:", data);
         alert(data.error || "Unable to start checkout.");
         return;

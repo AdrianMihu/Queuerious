@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "../../../../../lib/supabase/stripe/stripe";
+import { stripe } from "@/lib/supabase/stripe/stripe";
 
 const PRODUCTS = {
   queuetie: {
@@ -15,7 +15,7 @@ const PRODUCTS = {
   },
 
   queuenquistador: {
-    priceId: process.env.STRIPE_PRICE_QUEUENQUISTADOR!,
+    priceId: process.env.STRIPE_PRICE_QUEENQUISTADOR!,
     type: "tokens",
     tokens: 50,
   },
@@ -41,10 +41,7 @@ export async function POST(request: NextRequest) {
     const userId = body.userId as string;
 
     if (!productKey || !PRODUCTS[productKey]) {
-      return NextResponse.json(
-        { error: "Invalid product." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid product." }, { status: 400 });
     }
 
     if (!userId) {
@@ -56,15 +53,10 @@ export async function POST(request: NextRequest) {
 
     const product = PRODUCTS[productKey];
 
-    const origin =
-      request.headers.get("origin") ||
-      new URL(request.url).origin;
+    const origin = request.headers.get("origin") || new URL(request.url).origin;
 
     const session = await stripe.checkout.sessions.create({
-      mode:
-        product.type === "subscription"
-          ? "subscription"
-          : "payment",
+      mode: product.type === "subscription" ? "subscription" : "payment",
 
       line_items: [
         {
@@ -73,15 +65,13 @@ export async function POST(request: NextRequest) {
         },
       ],
 
-      success_url: `${origin}/shop/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/shop`,
+      success_url: `${origin}/dashboard/store/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/dashboard/store`,
 
       metadata: {
         userId,
         product: productKey,
-        tokens: product.type === "tokens"
-          ? String(product.tokens)
-          : "0",
+        tokens: product.type === "tokens" ? String(product.tokens) : "0",
       },
     });
 
