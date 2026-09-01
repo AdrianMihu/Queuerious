@@ -234,66 +234,26 @@ useEffect(() => {
           return;
         }
     
-        /*
-          Remove any old WAITING entries.
-    
-          Old MATCHED entries are left alone because
-          they belong to previous conversations/history.
-        */
-    
-        const { error: deleteError } = await supabase
-          .from("queue_entries")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("status", "waiting");
-    
-        if (deleteError) {
-          console.error(
-            "Error clearing old queue entries:",
-            deleteError
-          );
-        }
-    
-        /*
-          Create a completely NEW queue entry
-          for this queue session.
-        */
-    
-        const { data: newQueueEntry, error: insertError } =
-          await supabase
-            .from("queue_entries")
-            .insert({
-              user_id: user.id,
-              status: "waiting",
-              queue_type: "standard",
-              
-            })
-            .select("id")
-            .single();
-    
-        if (insertError || !newQueueEntry || cancelled) {
-          console.error("Error creating queue entry");
+        const { data: currentQueueEntry, error: queueEntryError } =
+  await supabase
+    .from("queue_entries")
+    .select("id, status, conversation_id")
+    .eq("user_id", user.id)
+    .eq("status", "waiting")
+    .order("joined_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-console.error("message:", insertError?.message);
-console.error("details:", insertError?.details);
-console.error("hint:", insertError?.hint);
-console.error("code:", insertError?.code);
+if (queueEntryError || !currentQueueEntry) {
+  console.error("Error finding current queue entry:", queueEntryError);
+  router.push("/dashboard/queuemitment");
+  return;
+}
 
-console.error(
-  JSON.stringify(insertError, null, 2)
-);
+queueEntryIdRef.current = currentQueueEntry.id;
+    
+        
 
-
-    
-          return;
-        }
-    
-        /*
-          THIS is the queue entry that belongs
-          to the current queue session.
-        */
-    
-        queueEntryIdRef.current = newQueueEntry.id;
     
         /*
           Start matchmaking only after

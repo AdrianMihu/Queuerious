@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+
 import {
   Heart,
   Home,
@@ -23,6 +25,28 @@ export default function DashboardSidebar({
   email,
 }: DashboardSidebarProps) {
   const pathname = usePathname();
+  const isQueueWaiting =
+  pathname === "/dashboard/queuemitment/waiting";
+
+  async function handleNavigation() {
+    console.log("🔥 HANDLE NAVIGATION", pathname);
+    if (!isQueueWaiting) return;
+  
+    const supabase = createClient();
+  
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+  
+    if (!user) return;
+  
+    await supabase
+      .from("queue_entries")
+      .update({ status: "discarded" })
+      .eq("user_id", user.id)
+      .eq("status", "waiting");
+  }
+  
 
   const isChatActive = pathname.startsWith("/dashboard/queuemitment/chat");
 
@@ -60,6 +84,7 @@ export default function DashboardSidebar({
 
         <Link
           href="/dashboard/how-it-works"
+          onClick={handleNavigation}
           className="group relative z-[60] flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-gray-500 transition hover:bg-violet-500/10 hover:text-violet-600 dark:text-white/50 dark:hover:text-violet-300"
         >
           <CircleHelp size={18} />
@@ -89,6 +114,7 @@ export default function DashboardSidebar({
         <div className={`space-y-1 ${navClass}`}>
           <Link
             href="/dashboard"
+            onClick={handleNavigation}
             className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
           >
             <Home size={18} />
@@ -98,6 +124,7 @@ export default function DashboardSidebar({
           <Link
             id="tutorial-profile"
             href="/dashboard/profile"
+            onClick={handleNavigation}
             className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
           >
             <User size={18} />
@@ -106,6 +133,7 @@ export default function DashboardSidebar({
           <Link
             id="tutorial-preferences"
             href="/dashboard/preferences"
+            onClick={handleNavigation}
             className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
           >
             <SlidersHorizontal size={18} />
@@ -114,6 +142,7 @@ export default function DashboardSidebar({
 
           <Link
             href="/dashboard/matches"
+            onClick={handleNavigation}
             className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
           >
             <Heart size={18} />
@@ -131,6 +160,7 @@ export default function DashboardSidebar({
           <Link
             id="tutorial-queuemitment"
             href="/dashboard/queuemitment"
+            onClick={handleNavigation}
             className="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
           >
             <Zap size={18} className="transition group-hover:fill-violet-300" />
@@ -139,6 +169,7 @@ export default function DashboardSidebar({
 
           <Link
             href="/dashboard/store"
+            onClick={handleNavigation}
             className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
           >
             <ShoppingBag size={18} />
@@ -151,6 +182,7 @@ export default function DashboardSidebar({
         <div className={navClass}>
           <Link
             href="/dashboard/settings"
+            onClick={handleNavigation}
             className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
           >
             <Settings size={18} />
@@ -159,6 +191,7 @@ export default function DashboardSidebar({
 
           <Link
             href="/dashboard/debug"
+            onClick={handleNavigation}
             className={`mb-3 flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white ${navClass}`}
           >
             <Settings size={18} />
