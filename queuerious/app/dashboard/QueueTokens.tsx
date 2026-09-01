@@ -17,6 +17,28 @@ export default function QueueTokens({
 }: QueueTokensProps) {
   const [queueTokens, setQueueTokens] = useState(initialTokens);
 
+  useEffect(() => {
+    const supabase = createClient();
+  
+    async function fetchTokens() {
+      const { data, error } = await supabase
+        .from("queue_tokens")
+        .select("tokens")
+        .eq("user_id", userId)
+        .single();
+  
+      if (!error && data) {
+        setQueueTokens(data.tokens);
+      }
+    }
+  
+    fetchTokens();
+  
+    const interval = setInterval(fetchTokens, 1000);
+  
+    return () => clearInterval(interval);
+  }, [userId]);
+
   const [freeTokenClaimedAt, setFreeTokenClaimedAt] =
     useState<string | null>(initialFreeTokenClaimedAt);
 
