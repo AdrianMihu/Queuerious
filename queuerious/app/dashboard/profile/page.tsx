@@ -240,49 +240,6 @@ const interestsList = interestCategories.flatMap(
   (category) => category.interests
 );
 
-const romanianCities = [
-  "Alba Iulia",
-  "Alexandria",
-  "Arad",
-  "Bacău",
-  "Baia Mare",
-  "Bistrița",
-  "Botoșani",
-  "Brăila",
-  "Brașov",
-  "București",
-  "Buzău",
-  "Călărași",
-  "Cluj-Napoca",
-  "Constanța",
-  "Craiova",
-  "Deva",
-  "Drobeta-Turnu Severin",
-  "Focșani",
-  "Galați",
-  "Giurgiu",
-  "Iași",
-  "Miercurea Ciuc",
-  "Oradea",
-  "Piatra Neamț",
-  "Pitești",
-  "Ploiești",
-  "Râmnicu Vâlcea",
-  "Reșița",
-  "Satu Mare",
-  "Sfântu Gheorghe",
-  "Sibiu",
-  "Slatina",
-  "Slobozia",
-  "Suceava",
-  "Târgu Jiu",
-  "Târgu Mureș",
-  "Timișoara",
-  "Tulcea",
-  "Vaslui",
-  "Zalău",
-];
-
 function calculateAge(dateOfBirth: string) {
   if (!dateOfBirth) return null;
 
@@ -306,6 +263,9 @@ function calculateAge(dateOfBirth: string) {
 export default function ProfilePage() {
   const [firstName, setFirstName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
+  const [countryCode, setCountryCode] = useState("");
+  const [countryName, setCountryName] = useState("");
+  const [countryFlag, setCountryFlag] = useState("");
   const [height, setHeight] = useState("");
   const [location, setLocation] = useState("");
   const [locationSearch, setLocationSearch] = useState("");
@@ -350,9 +310,42 @@ export default function ProfilePage() {
 
   const isAgeValid = age !== null && age >= 16 && age <= 90;
 
-  const filteredCities = romanianCities.filter((city) =>
-    city.toLowerCase().includes(locationSearch.toLowerCase())
-  );
+  const [cities, setCities] = useState<
+    { id: number; name: string; countryCode: string }[]
+  >([]);
+
+  useEffect(() => {
+    if (!countryCode || locationSearch.trim().length < 2) {
+      const timeout = setTimeout(() => {
+        setCities([]);
+      }, 0);
+
+      return () => clearTimeout(timeout);
+    }
+
+    const timeout = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `/api/locations/cities?country=${encodeURIComponent(
+            countryCode
+          )}&q=${encodeURIComponent(locationSearch.trim())}`
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to load cities");
+        }
+
+        const data = await response.json();
+
+        setCities(data);
+      } catch (error) {
+        console.error("Error loading cities:", error);
+        setCities([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [countryCode, locationSearch]);
 
   function toggleInterest(interest: string) {
     setSelectedInterests((current) => {
@@ -477,6 +470,23 @@ export default function ProfilePage() {
         }
 
         setFirstName(data.first_name ?? "");
+        setCountryCode(data.country_code ?? "");
+        const countryResponse = await fetch("/api/countries");
+
+        if (countryResponse.ok) {
+          const countries: {
+            code: string;
+            name: string;
+            flag: string;
+          }[] = await countryResponse.json();
+
+          const country = countries.find(
+            (item) => item.code === data.country_code
+          );
+
+          setCountryName(country?.name ?? "");
+          setCountryFlag(country?.flag ?? "");
+        }
         setDateOfBirth(data.date_of_birth ?? "");
         setHeight(data.height_cm ? String(data.height_cm) : "");
         setLocation(data.location ?? "");
@@ -834,6 +844,24 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
+                {/* Country */}
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-white/80">
+                    Country
+                  </label>
+
+                  <div className="flex w-full items-center rounded-2xl border border-white/[0.08] bg-black/20 px-4 py-3.5">
+                    <span className="text-sm text-white/60">
+                      {countryFlag}{" "}
+                      {countryName || countryCode || "Not available"}
+                    </span>
+                  </div>
+
+                  <p className="mt-2 text-xs text-white/25">
+                    Your country cannot be changed.
+                  </p>
+                </div>
+
                 {/* Location */}
                 <div className="relative">
                   <label className="mb-2 block text-sm font-medium text-white/80">
@@ -875,25 +903,25 @@ export default function ProfilePage() {
 
                   {isLocationOpen && (
                     <div className="absolute z-30 mt-2 max-h-64 w-full overflow-y-auto rounded-2xl border border-white/[0.10] bg-[#14141b] p-2 shadow-2xl shadow-black/40">
-                      {filteredCities.length > 0 ? (
-                        filteredCities.map((city) => (
+                      {cities.length > 0 ? (
+                        cities.map((city) => (
                           <button
-                            key={city}
+                            key={city.id}
                             type="button"
                             onClick={() => {
-                              setLocation(city);
-                              setLocationSearch(city);
+                              setLocation(city.name);
+                              setLocationSearch(city.name);
                               setIsLocationOpen(false);
                             }}
                             className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm text-white/70 transition hover:bg-violet-500/10 hover:text-white"
                           >
                             <MapPin size={16} className="text-violet-300/70" />
-                            {city}
+                            {city.name}
                           </button>
                         ))
                       ) : (
                         <div className="px-4 py-6 text-center text-sm text-white/35">
-                          No Romanian city found
+                          No city found
                         </div>
                       )}
                     </div>

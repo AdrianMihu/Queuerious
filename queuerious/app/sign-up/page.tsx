@@ -15,7 +15,7 @@ import {
   User,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "../../lib/supabase/client";
 
 export default function SignUp() {
@@ -33,6 +33,14 @@ export default function SignUp() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  const [countryCode, setCountryCode] = useState("");
+  const [countries, setCountries] = useState<
+    { code: string; name: string; flag: string }[]
+  >([]);
+
+  const [countrySearch, setCountrySearch] = useState("");
+  const [countryOpen, setCountryOpen] = useState(false);
+
   function handleDateSelect(date: Date | undefined) {
     if (!date) return;
 
@@ -46,6 +54,32 @@ export default function SignUp() {
 
     setIsDatePickerOpen(false);
   }
+
+  useEffect(() => {
+    async function loadCountries() {
+      try {
+        const response = await fetch("/api/countries");
+
+        if (!response.ok) {
+          throw new Error("Failed to load countries");
+        }
+
+        const data: {
+          code: string;
+          name: string;
+          flag: string;
+        }[] = await response.json();
+
+        console.log("COUNTRIES:", data);
+
+        setCountries(data);
+      } catch (error) {
+        console.error("Error loading countries:", error);
+      }
+    }
+
+    loadCountries();
+  }, []);
 
   async function handleSignUp(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -93,6 +127,11 @@ export default function SignUp() {
       return;
     }
 
+    if (!countryCode) {
+      setMessage("Please select your country.");
+      return;
+    }
+
     setLoading(true);
 
     const supabase = createClient();
@@ -105,6 +144,7 @@ export default function SignUp() {
           first_name: firstName.trim(),
           date_of_birth: dateOfBirth,
           gender,
+          country_code: countryCode,
         },
       },
     });
@@ -114,28 +154,25 @@ export default function SignUp() {
       setLoading(false);
       return;
     }
-    
+
     if (data.user) {
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .upsert(
-          {
-            id: data.user.id,
-            first_name: firstName.trim(),
-            date_of_birth: dateOfBirth,
-            gender,
-            updated_at: new Date().toISOString(),
-          },
-          {
-            onConflict: "id",
-          }
-        );
-    
+      const { error: profileError } = await supabase.from("profiles").upsert(
+        {
+          id: data.user.id,
+          first_name: firstName.trim(),
+          date_of_birth: dateOfBirth,
+          gender,
+          country_code: countryCode,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "id",
+        }
+      );
+
       if (profileError) {
         console.error("Error creating profile:", profileError);
-        setMessage(
-          "Account was created, but we couldn't create your profile."
-        );
+        setMessage("Account was created, but we couldn't create your profile.");
         setLoading(false);
         return;
       }
@@ -217,76 +254,76 @@ export default function SignUp() {
 
               {/* Date of birth */}
               {/* Date of birth */}
-<div className="relative">
-  <label className="mb-2 block text-sm text-white/70">
-    Date of birth
-  </label>
+              <div className="relative">
+                <label className="mb-2 block text-sm text-white/70">
+                  Date of birth
+                </label>
 
-  <button
-    type="button"
-    onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-    className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-black/20 px-4 py-3.5 text-left transition hover:border-violet-500/70"
-  >
-    <div className="flex items-center gap-3">
-      <CalendarDays size={18} className="text-white/30" />
+                <button
+                  type="button"
+                  onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+                  className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-black/20 px-4 py-3.5 text-left transition hover:border-violet-500/70"
+                >
+                  <div className="flex items-center gap-3">
+                    <CalendarDays size={18} className="text-white/30" />
 
-      <span
-        className={dateOfBirth ? "text-white" : "text-white/25"}
-      >
-        {dateOfBirth
-          ? new Date(
-              dateOfBirth + "T00:00:00"
-            ).toLocaleDateString("en-GB", {
-              day: "2-digit",
-              month: "long",
-              year: "numeric",
-            })
-          : "Select your date of birth"}
-      </span>
-    </div>
+                    <span
+                      className={dateOfBirth ? "text-white" : "text-white/25"}
+                    >
+                      {dateOfBirth
+                        ? new Date(
+                            dateOfBirth + "T00:00:00"
+                          ).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "long",
+                            year: "numeric",
+                          })
+                        : "Select your date of birth"}
+                    </span>
+                  </div>
 
-    <ChevronDown
-      size={18}
-      className={`text-white/40 transition ${
-        isDatePickerOpen ? "rotate-180" : ""
-      }`}
-    />
-  </button>
+                  <ChevronDown
+                    size={18}
+                    className={`text-white/40 transition ${
+                      isDatePickerOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
 
-  <p className="mt-2 text-xs text-white/35">
-    Your date of birth cannot be changed later.
-  </p>
+                <p className="mt-2 text-xs text-white/35">
+                  Your date of birth cannot be changed later.
+                </p>
 
-  {isDatePickerOpen && (
-    <div className="absolute left-0 top-full z-50 mt-3 rounded-2xl border border-violet-400/20 bg-[#15121f] p-4 shadow-2xl shadow-black/50">
-      <DayPicker
-        mode="single"
-        selected={
-          dateOfBirth
-            ? new Date(dateOfBirth + "T00:00:00")
-            : undefined
-        }
-        onSelect={handleDateSelect}
-        captionLayout="dropdown"
-        startMonth={
-          new Date(
-            new Date().getFullYear() - 90,
-            new Date().getMonth(),
-            new Date().getDate()
-          )
-        }
-        endMonth={
-          new Date(
-            new Date().getFullYear() - 16,
-            new Date().getMonth(),
-            new Date().getDate()
-          )
-        }
-        className="text-white"
-      />
-    </div>
-  )}
-</div>
+                {isDatePickerOpen && (
+                  <div className="absolute left-0 top-full z-50 mt-3 rounded-2xl border border-violet-400/20 bg-[#15121f] p-4 shadow-2xl shadow-black/50">
+                    <DayPicker
+                      mode="single"
+                      selected={
+                        dateOfBirth
+                          ? new Date(dateOfBirth + "T00:00:00")
+                          : undefined
+                      }
+                      onSelect={handleDateSelect}
+                      captionLayout="dropdown"
+                      startMonth={
+                        new Date(
+                          new Date().getFullYear() - 90,
+                          new Date().getMonth(),
+                          new Date().getDate()
+                        )
+                      }
+                      endMonth={
+                        new Date(
+                          new Date().getFullYear() - 16,
+                          new Date().getMonth(),
+                          new Date().getDate()
+                        )
+                      }
+                      className="text-white"
+                    />
+                  </div>
+                )}
+              </div>
 
               {/* Gender */}
               <div>
@@ -319,6 +356,75 @@ export default function SignUp() {
 
                 <p className="mt-2 text-xs text-white/30">
                   Your gender cannot be changed later.
+                </p>
+              </div>
+
+              {/* Country */}
+              <div>
+                <label className="mb-2 block text-sm text-white/70">
+                  Country
+                </label>
+
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setCountryOpen(!countryOpen)}
+                    className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-black/20 px-4 py-3.5 text-sm text-white outline-none transition focus:border-violet-500/70"
+                  >
+                    <span>
+                      {countryCode
+                        ? countries.find(
+                            (country) => country.code === countryCode
+                          )?.flag +
+                          " " +
+                          countries.find(
+                            (country) => country.code === countryCode
+                          )?.name
+                        : "Select your country"}
+                    </span>
+
+                    <ChevronDown size={18} className="text-white/40" />
+                  </button>
+
+                  {countryOpen && (
+                    <div className="absolute z-50 mt-2 w-full rounded-xl border border-white/10 bg-[#15121f] p-2 shadow-xl">
+                      <input
+                        type="text"
+                        value={countrySearch}
+                        onChange={(e) => setCountrySearch(e.target.value)}
+                        placeholder="Search country..."
+                        autoFocus
+                        className="mb-2 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-violet-500/70"
+                      />
+
+                      <div className="max-h-60 overflow-y-auto">
+                        {countries
+                          .filter((country) =>
+                            country.name
+                              .toLowerCase()
+                              .includes(countrySearch.toLowerCase())
+                          )
+                          .map((country) => (
+                            <button
+                              key={country.code}
+                              type="button"
+                              onClick={() => {
+                                setCountryCode(country.code);
+                                setCountrySearch("");
+                                setCountryOpen(false);
+                              }}
+                              className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-white transition hover:bg-white/10"
+                            >
+                              {country.flag} {country.name}
+                            </button>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <p className="mt-2 text-xs text-white/30">
+                  Your country cannot be changed later.
                 </p>
               </div>
 

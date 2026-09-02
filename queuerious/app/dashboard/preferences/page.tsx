@@ -24,7 +24,7 @@ export default function PreferencesPage() {
   const [minAge, setMinAge] = useState(18);
   const [maxAge, setMaxAge] = useState(35);
 
-  const [locationPreference, setLocationPreference] = useState("anywhere");
+  const [locationPreference, setLocationPreference] = useState("same_country");
 
   const [loadingPreferences, setLoadingPreferences] = useState(true);
   const [savingPreferences, setSavingPreferences] = useState(false);
@@ -77,7 +77,7 @@ export default function PreferencesPage() {
         setMinAge(data.min_age ?? 18);
         setMaxAge(data.max_age ?? 35);
 
-        setLocationPreference(data.location_preference ?? "anywhere");
+        setLocationPreference(data.location_preference ?? "same_country");
       } catch (error) {
         console.error("Unexpected error while loading preferences:", error);
       } finally {
@@ -431,6 +431,7 @@ export default function PreferencesPage() {
               </div>
 
               <div className="space-y-3">
+                {/* SAME CITY */}
                 <button
                   type="button"
                   onClick={() => setLocationPreference("same_city")}
@@ -442,7 +443,6 @@ export default function PreferencesPage() {
                 >
                   <div>
                     <p className="font-medium">Same city</p>
-
                     <p className="mt-1 text-sm text-white/35">
                       Meet people from your own city.
                     </p>
@@ -461,31 +461,61 @@ export default function PreferencesPage() {
                   </div>
                 </button>
 
+                {/* SAME COUNTRY */}
                 <button
                   type="button"
-                  onClick={() => setLocationPreference("anywhere")}
+                  onClick={() => setLocationPreference("same_country")}
                   className={`flex w-full items-center justify-between rounded-2xl border p-5 text-left transition ${
-                    locationPreference === "anywhere"
+                    locationPreference === "same_country"
                       ? "border-violet-400/50 bg-violet-500/10"
                       : "border-white/[0.08] bg-white/[0.02] hover:border-white/20"
                   }`}
                 >
                   <div>
-                    <p className="font-medium">Anywhere in Romania</p>
-
+                    <p className="font-medium">Same country</p>
                     <p className="mt-1 text-sm text-white/35">
-                      Expand your queue across Romania.
+                      Meet people from your country.
                     </p>
                   </div>
 
                   <div
                     className={`flex h-6 w-6 items-center justify-center rounded-full border ${
-                      locationPreference === "anywhere"
+                      locationPreference === "same_country"
                         ? "border-violet-400 bg-violet-500"
                         : "border-white/20"
                     }`}
                   >
-                    {locationPreference === "anywhere" && (
+                    {locationPreference === "same_country" && (
+                      <div className="h-2.5 w-2.5 rounded-full bg-white" />
+                    )}
+                  </div>
+                </button>
+
+                {/* ANY COUNTRY */}
+                <button
+                  type="button"
+                  onClick={() => setLocationPreference("any_country")}
+                  className={`flex w-full items-center justify-between rounded-2xl border p-5 text-left transition ${
+                    locationPreference === "any_country"
+                      ? "border-violet-400/50 bg-violet-500/10"
+                      : "border-white/[0.08] bg-white/[0.02] hover:border-white/20"
+                  }`}
+                >
+                  <div>
+                    <p className="font-medium">Any country</p>
+                    <p className="mt-1 text-sm text-white/35">
+                      Meet people from anywhere in the world.
+                    </p>
+                  </div>
+
+                  <div
+                    className={`flex h-6 w-6 items-center justify-center rounded-full border ${
+                      locationPreference === "any_country"
+                        ? "border-violet-400 bg-violet-500"
+                        : "border-white/20"
+                    }`}
+                  >
+                    {locationPreference === "any_country" && (
                       <div className="h-2.5 w-2.5 rounded-full bg-white" />
                     )}
                   </div>
@@ -558,7 +588,9 @@ export default function PreferencesPage() {
                 <p className="mt-2 font-medium text-white/80">
                   {locationPreference === "same_city"
                     ? "Same city"
-                    : "Anywhere in Romania"}
+                    : locationPreference === "same_country"
+                    ? "Same country"
+                    : "Any country"}
                 </p>
               </div>
             </div>
