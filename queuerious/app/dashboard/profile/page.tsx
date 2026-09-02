@@ -994,15 +994,7 @@ export default function ProfilePage() {
                           <button
                             key={interest.name}
                             type="button"
-                            onClick={() => {
-                              setSelectedInterests((current) =>
-                                current.includes(interest.name)
-                                  ? current.filter(
-                                      (item) => item !== interest.name
-                                    )
-                                  : [...current, interest.name]
-                              );
-                            }}
+                            onClick={() => toggleInterest(interest.name)}
                             className={`rounded-xl border px-3 py-2 text-sm transition ${
                               isSelected
                                 ? "border-violet-400/40 bg-violet-500/15 text-violet-200"

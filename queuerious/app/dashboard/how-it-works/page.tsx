@@ -19,7 +19,7 @@ const slides = [
     eyebrow: "WELCOME TO QUEUERIOUS",
     title: "Meet the mind before the face.",
     description:
-      "Connection starts with curiosity, conversation and personality — before either of you sees a profile.",
+      "Connection starts with curiosity, conversation and personality  before either of you sees a profile.",
   },
   {
     eyebrow: "STEP 1 · ENTER THE QUEUE",
@@ -37,7 +37,7 @@ const slides = [
     eyebrow: "STEP 3 · GET MATCHED",
     title: "Someone is waiting.",
     description:
-      "When two people enter the queue, the conversation begins — completely anonymous.",
+      "When two people enter the queue, the conversation begins  completely anonymous.",
   },
   {
     eyebrow: "STEP 4 · THE CONVERSATION",

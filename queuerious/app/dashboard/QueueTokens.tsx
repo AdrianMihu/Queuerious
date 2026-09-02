@@ -17,35 +17,37 @@ export default function QueueTokens({
 }: QueueTokensProps) {
   const [queueTokens, setQueueTokens] = useState(initialTokens);
 
+  const [freeTokenClaimedAt, setFreeTokenClaimedAt] = useState<string | null>(
+    initialFreeTokenClaimedAt
+  );
+
   useEffect(() => {
     const supabase = createClient();
-  
+
     async function fetchTokens() {
       const { data, error } = await supabase
         .from("queue_tokens")
-        .select("tokens")
+        .select("tokens, free_token_claimed_at")
         .eq("user_id", userId)
-        .single();
-  
-      console.log("FETCHED TOKENS:", data);
-      console.log("FETCHED TOKENS:", data);
-  
-      if (!error && data) {
-        setQueueTokens(data.tokens);
-      }
+        .maybeSingle();
+
+        if (!error && data) {
+          setQueueTokens(data.tokens);
+          setFreeTokenClaimedAt(data.free_token_claimed_at);
+        }
     }
-  
+    
+
     fetchTokens();
-  
+
     const interval = setInterval(fetchTokens, 1000);
-  
+
     return () => clearInterval(interval);
   }, [userId]);
 
-  const [freeTokenClaimedAt, setFreeTokenClaimedAt] =
-    useState<string | null>(initialFreeTokenClaimedAt);
+ 
 
-    const [now, setNow] = useState(0);
+  const [now, setNow] = useState(0);
 
   const [isClaiming, setIsClaiming] = useState(false);
 
@@ -53,29 +55,27 @@ export default function QueueTokens({
     Keep the countdown updating every second
   */
 
-    useEffect(() => {
-      const interval = setInterval(() => {
-        setNow(Date.now());
-      }, 1000);
-    
-      return () => clearInterval(interval);
-    }, []);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   /*
     Calculate when the next free token is available
   */
 
   const nextFreeTokenAt = freeTokenClaimedAt
-    ? new Date(freeTokenClaimedAt).getTime() +
-      24 * 60 * 60 * 1000
+    ? new Date(freeTokenClaimedAt).getTime() + 8 * 60 * 60 * 1000
     : null;
 
   const remainingTime = nextFreeTokenAt
     ? Math.max(nextFreeTokenAt - now, 0)
     : 0;
 
-  const canClaim =
-    !freeTokenClaimedAt || remainingTime === 0;
+  const canClaim = !freeTokenClaimedAt || remainingTime === 0;
 
   /*
     Format countdown
@@ -86,9 +86,7 @@ export default function QueueTokens({
 
     const hours = Math.floor(totalSeconds / 3600);
 
-    const minutes = Math.floor(
-      (totalSeconds % 3600) / 60
-    );
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
 
     const seconds = totalSeconds % 60;
 
@@ -106,20 +104,29 @@ export default function QueueTokens({
 
     const supabase = createClient();
 
-    const { data, error } = await supabase.rpc(
-      "claim_free_queue_token"
-    );
+    const { data, error } = await supabase.rpc("claim_free_queue_token");
 
     if (error) {
       console.error(
-        "Error claiming free queue token:",
-        error
+        "CLAIM ERROR MESSAGE:",
+        error.message
       );
-
+      console.error(
+        "CLAIM ERROR CODE:",
+        error.code
+      );
+      console.error(
+        "CLAIM ERROR DETAILS:",
+        error.details
+      );
+      console.error(
+        "CLAIM ERROR HINT:",
+        error.hint
+      );
+    
       setIsClaiming(false);
       return;
     }
-
     /*
       Update token count instantly
     */
@@ -134,9 +141,7 @@ export default function QueueTokens({
       Start new 24h cooldown
     */
 
-    setFreeTokenClaimedAt(
-      new Date().toISOString()
-    );
+    setFreeTokenClaimedAt(new Date().toISOString());
 
     setIsClaiming(false);
   }
@@ -152,13 +157,10 @@ export default function QueueTokens({
 
         <div>
           <p className="text-xs font-medium">
-            {queueTokens}{" "}
-            {queueTokens === 1 ? "queue" : "queues"}
+            {queueTokens} {queueTokens === 1 ? "queue" : "queues"}
           </p>
 
-          <p className="text-[10px] text-white/35">
-            available
-          </p>
+          <p className="text-[10px] text-white/35">available</p>
         </div>
       </div>
 
@@ -175,9 +177,7 @@ export default function QueueTokens({
       >
         <div
           className={`flex h-7 w-7 items-center justify-center rounded-full ${
-            canClaim
-              ? "bg-violet-500/15"
-              : "bg-white/[0.05]"
+            canClaim ? "bg-violet-500/15" : "bg-white/[0.05]"
           }`}
         >
           {canClaim ? (
@@ -188,9 +188,7 @@ export default function QueueTokens({
         </div>
 
         <div className="text-left">
-          <p className="text-xs font-medium">
-            Free queue token
-          </p>
+          <p className="text-xs font-medium">Free queue token</p>
 
           <p className="text-[10px] text-white/35">
             {isClaiming

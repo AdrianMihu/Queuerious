@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Bell, MessageCircle, X } from "lucide-react";
 
@@ -13,7 +14,28 @@ type NotificationsProps = {
 export default function Notifications({
   userId,
 }: NotificationsProps) {
+  const pathname = usePathname();
+  
   const [hasNotifications, setHasNotifications] = useState(false);
+
+const notificationStorageKey = `queuerious-notifications-seen-${userId}`;
+useEffect(() => {
+  function handleNotificationsSeen() {
+    setHasNotifications(false);
+  }
+
+  window.addEventListener(
+    "queuerious-notifications-seen",
+    handleNotificationsSeen
+  );
+
+  return () => {
+    window.removeEventListener(
+      "queuerious-notifications-seen",
+      handleNotificationsSeen
+    );
+  };
+}, []);
   const [open, setOpen] = useState(false);
 
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -85,6 +107,33 @@ export default function Notifications({
         return;
       }
 
+      const seenAt = localStorage.getItem(
+        notificationStorageKey
+      );
+      
+      const { data: latestMessage, error: latestMessageError } =
+        await supabase
+          .from("conversation_messages")
+          .select("created_at, sender_id")
+          .in("conversation_id", conversationIds)
+          .neq("sender_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+      
+      if (!latestMessageError && latestMessage) {
+        if (
+          !seenAt ||
+          new Date(latestMessage.created_at) >
+            new Date(seenAt)
+        ) {
+          setHasNotifications(true);
+        }
+      }
+
+      console.log("🔔 NOTIFICATION CONVERSATIONS:", conversationIds);
+      console.log("🔔 SUBSCRIBING TO NOTIFICATIONS");
+
       channel = supabase
         .channel(`notifications-${userId}-${Date.now()}`)
         .on(
@@ -95,6 +144,7 @@ export default function Notifications({
             table: "conversation_messages",
           },
           (payload) => {
+            console.log("🔔 REALTIME MESSAGE RECEIVED:", payload);
             const message = payload.new as {
               conversation_id: string;
               sender_id: string;
@@ -116,6 +166,8 @@ export default function Notifications({
           }
         )
         .subscribe((status) => {
+          console.log("🔔 NOTIFICATION CHANNEL STATUS:", status);
+        
           if (status === "CHANNEL_ERROR") {
             console.error(
               "Notification realtime channel error"
@@ -133,7 +185,7 @@ export default function Notifications({
         supabase.removeChannel(channel);
       }
     };
-  }, [userId]);
+  }, [userId, notificationStorageKey]);
 
   /*
     OPEN NOTIFICATIONS
@@ -147,10 +199,15 @@ export default function Notifications({
     MARK AS SEEN
   */
 
-  function handleNotificationClick() {
-    setHasNotifications(false);
-    setOpen(false);
-  }
+    function handleNotificationClick() {
+      localStorage.setItem(
+        notificationStorageKey,
+        new Date().toISOString()
+      );
+    
+      setHasNotifications(false);
+      setOpen(false);
+    }
 
   return (
     <div ref={notificationRef} className="relative">

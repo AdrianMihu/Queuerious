@@ -40,11 +40,11 @@ export default function DashboardSidebar({
   
     if (!user) return;
   
-    await supabase
-      .from("queue_entries")
-      .update({ status: "discarded" })
-      .eq("user_id", user.id)
-      .eq("status", "waiting");
+    const { error } = await supabase.rpc("leave_queuemitment");
+
+console.log("🔥 LEAVE QUEUEMITMENT ERROR:", error);
+
+console.log("🔥 DISCARD ERROR:", error);
   }
   
 

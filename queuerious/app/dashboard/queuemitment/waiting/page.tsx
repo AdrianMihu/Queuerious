@@ -43,14 +43,16 @@ const isCheckingRef = useRef(false);
 */
 
 useEffect(() => {
-  if (
-    queueState !== "matched" &&
-    queueState !== "countdown"
-  ) {
-    return;
-  }
-
   const handlePageHide = () => {
+    if (
+      queueState !== "matched" &&
+      queueState !== "countdown"
+    ) {
+      // User is still waiting → cancel their queue entry
+      navigator.sendBeacon("/api/leave-queue");
+      return;
+    }
+
     const conversationId = conversationIdRef.current;
 
     if (!conversationId) return;
@@ -519,149 +521,42 @@ useEffect(() => {
         
           const supabase = createClient();
 
-          /*
+      /*
   FINAL HANDSHAKE
-
-  Confirm that this user is still here
-  at the exact moment the countdown ends.
 */
 
-const {
-  data: { user },
-} = await supabase.auth.getUser();
-
-if (!user) {
-  setQueueState("failed");
-  return;
-}
-
-const { data: conversationPosition, error: positionError } =
-  await supabase
-    .from("queuemitment_conversations")
-    .select("user_one_id, user_two_id")
-    .eq("id", conversationId)
-    .single();
-
-if (positionError || !conversationPosition) {
-  console.error(
-    "Error finding user position:",
-    positionError
-  );
-
-  setQueueState("failed");
-  return;
-}
-
 const { data: bothUsersReady, error: finalReadyError } =
-  await supabase.rpc(
-    "mark_queuemitment_final_ready",
-    {
-      p_conversation_id: conversationId,
-    }
-  );
+await supabase.rpc(
+  "mark_queuemitment_final_ready",
+  {
+    p_conversation_id: conversationId,
+  }
+);
 
 if (finalReadyError) {
-  console.error(
-    "Error during final handshake:",
-    finalReadyError
-  );
+console.error(
+  "Error during final handshake:",
+  finalReadyError
+);
 
-  setQueueState("failed");
-  return;
+setQueueState("failed");
+return;
 }
 
 /*
-  The other user may still be finishing
-  their countdown.
-
-  Wait briefly for them.
+If both users are ready, continue immediately.
+Otherwise wait for the second user.
 */
 
 if (!bothUsersReady) {
-  let connected = false;
+let connected = false;
 
-  for (let attempt = 0; attempt < 10; attempt++) {
-    await new Promise((resolve) =>
-      setTimeout(resolve, 500)
-    );
+for (let attempt = 0; attempt < 20; attempt++) {
+  await new Promise((resolve) =>
+    setTimeout(resolve, 500)
+  );
 
-    const { data: latestConversation } = await supabase
-      .from("queuemitment_conversations")
-      .select(
-        "user_one_final_ready, user_two_final_ready"
-      )
-      .eq("id", conversationId)
-      .single();
-
-    if (
-      latestConversation?.user_one_final_ready &&
-      latestConversation?.user_two_final_ready
-    ) {
-      connected = true;
-      break;
-    }
-  }
-
-  if (!connected) {
-    setQueueState("failed");
-    return;
-  }
-}
-        
-          /*
-            Get the current conversation state
-          */
-        
-          const { data: conversation, error: conversationError } =
-            await supabase
-              .from("queuemitment_conversations")
-              .select(
-                "user_one_ready, user_two_ready, user_one_final_ready, user_two_final_ready"
-              )
-              .eq("id", conversationId)
-              .single();
-        
-          if (conversationError || !conversation) {
-            console.error(
-              "Error checking ready status:",
-              conversationError
-            );
-        
-            return;
-          }
-        
-          /*
-            BOTH USERS MUST STILL BE READY
-          */
-        
-            if (
-              !conversation.user_one_ready ||
-              !conversation.user_two_ready
-            ) {
-              console.log(
-                "The other person could not connect."
-              );
-            
-              setQueueState("failed");
-            
-              return;
-            }
-
- /*
-  WAIT BRIEFLY FOR BOTH HEARTBEATS
-
-  Background tabs can have delayed timers,
-  so we don't fail instantly./*
-  FINAL HANDSHAKE
-
-  Wait for both users to reach the exact
-  end of the countdown.
-*/
-
-let bothUsersFinalReady = false;
-
-for (let attempt = 0; attempt < 10; attempt++) {
-  const { data: latestConversation, error: finalCheckError } =
+  const { data: latestConversation, error } =
     await supabase
       .from("queuemitment_conversations")
       .select(
@@ -670,39 +565,31 @@ for (let attempt = 0; attempt < 10; attempt++) {
       .eq("id", conversationId)
       .single();
 
-  if (finalCheckError) {
+  if (error) {
     console.error(
       "Error checking final ready status:",
-      finalCheckError
+      error
     );
+    continue;
   }
 
   if (
     latestConversation?.user_one_final_ready &&
     latestConversation?.user_two_final_ready
   ) {
-    bothUsersFinalReady = true;
+    connected = true;
     break;
   }
-
-  /*
-    Wait briefly for the other user to
-    finish their countdown.
-  */
-
-  await new Promise((resolve) =>
-    setTimeout(resolve, 500)
-  );
 }
 
-if (!bothUsersFinalReady) {
+if (!connected) {
   console.log(
     "The other person could not connect."
   );
 
   setQueueState("failed");
-
   return;
+}
 }
         
           /*

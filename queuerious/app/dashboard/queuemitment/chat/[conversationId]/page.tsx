@@ -431,36 +431,43 @@ export default function QueuemitmentChatPage() {
     SEND MESSAGE
   */
 
-  const sendMessage = async () => {
-    const trimmedMessage = newMessage.trim();
-
-    if (!trimmedMessage || !currentUserId || !conversationId) {
-      return;
-    }
-
-    const supabase = createClient();
-
-    const { error } = await supabase.from("conversation_messages").insert({
-      conversation_id: conversationId,
-      sender_id: currentUserId,
-      message_type: "message",
-      content: trimmedMessage,
-    });
-
-    if (error) {
-      console.error("Error sending message");
-      console.error("message:", error.message);
-      console.error("details:", error.details);
-      console.error("hint:", error.hint);
-      console.error("code:", error.code);
-
-      console.error(JSON.stringify(error, null, 2));
-
-      return;
-    }
-
-    setNewMessage("");
-  };
+    const sendMessage = async () => {
+      const trimmedMessage = newMessage.trim();
+    
+      if (
+        !trimmedMessage ||
+        !currentUserId ||
+        !conversationId ||
+        trimmedMessage.length > 1000
+      ) {
+        return;
+      }
+    
+      const supabase = createClient();
+    
+      const { error } = await supabase
+        .from("conversation_messages")
+        .insert({
+          conversation_id: conversationId,
+          sender_id: currentUserId,
+          message_type: "message",
+          content: trimmedMessage,
+        });
+    
+      if (error) {
+        console.error("Error sending message");
+        console.error("message:", error.message);
+        console.error("details:", error.details);
+        console.error("hint:", error.hint);
+        console.error("code:", error.code);
+    
+        console.error(JSON.stringify(error, null, 2));
+    
+        return;
+      }
+    
+      setNewMessage("");
+    };
 
     /*
     Test Debug Button Skip Time
@@ -513,49 +520,49 @@ export default function QueuemitmentChatPage() {
     End debug button
   */
 
-  const leaveChat = async () => {
-    isEndingConversationRef.current = true;
+    const leaveChat = async () => {
+      isEndingConversationRef.current = true;
+    
+      const supabase = createClient();
+    
+      const { error } = await supabase.rpc(
+        "leave_queuemitment_chat",
+        {
+          p_conversation_id: conversationId,
+        }
+      );
+    
+      if (error) {
+        console.error("Error leaving chat:", error);
+        return;
+      }
+    
+      window.location.href = "/dashboard/queuemitment";
+    };
 
-    const supabase = createClient();
-
-    const { error } = await supabase
-      .from("queuemitment_conversations")
-      .update({
-        status: "ended",
-      })
-      .eq("id", conversationId);
-
-    if (error) {
-      console.error("Error leaving chat:", error);
-      return;
-    }
-
-    window.location.href = "/dashboard/queuemitment";
-  };
-
-  const submitReport = async () => {
-    if (!reportReason) return;
-
-    isEndingConversationRef.current = true;
-
-    const supabase = createClient();
-
-    const { error } = await supabase
-      .from("queuemitment_conversations")
-      .update({
-        status: "ended",
-      })
-      .eq("id", conversationId);
-
-    if (error) {
-      console.error("Error reporting conversation:", error);
-      return;
-    }
-
-    setShowReportModal(false);
-
-    window.location.href = "/dashboard/queuemitment?report=success";
-  };
+    const submitReport = async () => {
+      if (!reportReason) return;
+    
+      isEndingConversationRef.current = true;
+    
+      const supabase = createClient();
+    
+      const { error } = await supabase.rpc(
+        "leave_queuemitment_chat",
+        {
+          p_conversation_id: conversationId,
+        }
+      );
+    
+      if (error) {
+        console.error("Error reporting conversation:", error);
+        return;
+      }
+    
+      setShowReportModal(false);
+    
+      window.location.href = "/dashboard/queuemitment?report=success";
+    };
 
   const requestExtension = async () => {
     if (!conversation || !currentUserId || extensionUsed || secondsLeft === 0) {
@@ -811,7 +818,7 @@ export default function QueuemitmentChatPage() {
                 className={`flex ${isMe ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[75%] rounded-2xl px-5 py-3 text-sm leading-relaxed ${
+                  className={`max-w-[75%] break-words [overflow-wrap:anywhere] rounded-2xl px-5 py-3 text-sm leading-relaxed ${
                     isMe
                       ? "bg-violet-500 text-white"
                       : "border border-white/[0.08] bg-white/[0.04] text-white/80"
@@ -847,7 +854,9 @@ export default function QueuemitmentChatPage() {
             key={emoji}
             type="button"
             onClick={() => {
-              setNewMessage((current) => current + emoji);
+              setNewMessage((current) =>
+                `${current}${emoji}`.slice(0, 1000)
+              );
               setShowEmojiPicker(false);
             }}
             className="flex h-10 w-10 items-center justify-center rounded-xl text-xl transition hover:bg-white/[0.08]"
@@ -859,24 +868,32 @@ export default function QueuemitmentChatPage() {
     </div>
   )}
 </div>
-          <input
-            value={newMessage}
-            onChange={(event) => setNewMessage(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                sendMessage();
-              }
-            }}
-            placeholder="Say something worth discovering..."
-            className="flex-1 rounded-2xl border border-white/[0.08] bg-white/[0.04] px-5 py-4 text-sm outline-none placeholder:text-white/25 focus:border-violet-400/40"
-          />
+<div className="flex-1">
+  <input
+    value={newMessage}
+    maxLength={1000}
+    onChange={(event) => setNewMessage(event.target.value)}
+    onKeyDown={(event) => {
+      if (event.key === "Enter") {
+        sendMessage();
+      }
+    }}
+    placeholder="Say something worth discovering..."
+    className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.04] px-5 py-4 text-sm outline-none placeholder:text-white/25 focus:border-violet-400/40"
+  />
 
-          <button
-            onClick={sendMessage}
-            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-violet-500 text-white transition hover:bg-violet-400 active:scale-95"
-          >
-            <Send size={19} />
-          </button>
+  <p className="mt-1.5 text-right text-[10px] text-white/25">
+    {newMessage.length} / 1000
+  </p>
+</div>
+
+<button
+  onClick={sendMessage}
+  disabled={!newMessage.trim()}
+  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-violet-500 text-white transition hover:bg-violet-400 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+>
+  <Send size={19} />
+</button>
         </div>
       </div>
       {/* LEAVE MODAL */}
