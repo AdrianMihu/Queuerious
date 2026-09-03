@@ -295,16 +295,16 @@ export default function SettingsPage() {
                         {subscription.cancelled_at
                           ? `Your subscription will expire on ${new Date(
                               subscription.expires_at!
-                            ).toLocaleDateString("en-US", {
-                              month: "long",
+                            ).toLocaleDateString("en-GB", {
                               day: "numeric",
+                              month: "long",
                               year: "numeric",
                             })}`
                           : `Next billing: ${new Date(
                               subscription.expires_at!
-                            ).toLocaleDateString("en-US", {
-                              month: "long",
+                            ).toLocaleDateString("en-GB", {
                               day: "numeric",
+                              month: "long",
                               year: "numeric",
                             })}`}
                       </p>
