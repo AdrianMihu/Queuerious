@@ -88,9 +88,61 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  if (event.type === "invoice.paid") {
+    const invoice = event.data.object;
+
+    const stripeSubscriptionId =
+      invoice.parent?.type === "subscription_details"
+        ? invoice.parent.subscription_details?.subscription
+        : null;
+
+        if (stripeSubscriptionId) {
+          const subscriptionId =
+            typeof stripeSubscriptionId === "string"
+              ? stripeSubscriptionId
+              : stripeSubscriptionId.id;
+        
+          const subscription = await stripe.subscriptions.retrieve(
+            subscriptionId
+          );
+
+      const currentPeriodEnd =
+  subscription.items.data[0]?.current_period_end;
+
+if (!currentPeriodEnd) {
+  console.error("Missing subscription period end.");
+  return new NextResponse("Missing subscription period end", {
+    status: 500,
+  });
+}
+
+const expiresAt = new Date(
+  currentPeriodEnd * 1000
+).toISOString();
+
+      const { error } = await supabaseAdmin
+        .from("subscriptions")
+        .update({
+          expires_at: expiresAt,
+          status: "active",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("stripe_subscription_id", stripeSubscriptionId);
+
+      if (error) {
+        console.error("Subscription renewal update error:", error);
+        return new NextResponse("Failed to update subscription renewal", {
+          status: 500,
+        });
+      }
+
+      console.log("SUBSCRIPTION RENEWED:", stripeSubscriptionId, expiresAt);
+    }
+  }
+
   if (event.type === "customer.subscription.deleted") {
     const subscription = event.data.object;
-  
+
     const { error } = await supabaseAdmin
       .from("subscriptions")
       .update({
@@ -98,14 +150,14 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString(),
       })
       .eq("stripe_subscription_id", subscription.id);
-  
+
     if (error) {
       console.error("Subscription expiration update error:", error);
       return new NextResponse("Failed to update subscription", {
         status: 500,
       });
     }
-  
+
     console.log("SUBSCRIPTION EXPIRED:", subscription.id);
   }
 
