@@ -27,6 +27,7 @@ export default function SettingsPage() {
     started_at: string;
     expires_at: string | null;
     stripe_subscription_id: string | null;
+    cancelled_at: string | null;
   } | null>(null);
 
   const [loadingSubscription, setLoadingSubscription] = useState(true);
@@ -51,7 +52,9 @@ export default function SettingsPage() {
 
       const { data, error } = await supabase
         .from("subscriptions")
-        .select("id, plan, started_at, expires_at, stripe_subscription_id")
+        .select(
+          "id, plan, started_at, expires_at, stripe_subscription_id, cancelled_at"
+        )
         .eq("user_id", user.id)
         .eq("status", "active")
         .gt("expires_at", new Date().toISOString())
@@ -126,9 +129,9 @@ export default function SettingsPage() {
 
   async function handleCancelSubscription() {
     if (!subscription?.stripe_subscription_id) return;
-  
+
     setCancellingSubscription(true);
-  
+
     try {
       const response = await fetch("/api/stripe/cancel-subscription", {
         method: "POST",
@@ -139,14 +142,14 @@ export default function SettingsPage() {
           subscriptionId: subscription.stripe_subscription_id,
         }),
       });
-  
+
       const data = await response.json();
-  
+
       if (!response.ok) {
         console.error("Error cancelling subscription:", data);
         return;
       }
-  
+
       setShowCancelSubscription(false);
     } catch (error) {
       console.error("Unexpected cancellation error:", error);
@@ -272,7 +275,7 @@ export default function SettingsPage() {
                               : "bg-violet-500/10 text-violet-200"
                           }`}
                         >
-                          Active
+                          {subscription.cancelled_at ? "Cancelled" : "Active"}
                         </span>
                       </div>
 
@@ -288,8 +291,22 @@ export default function SettingsPage() {
                         )}
                       </p>
 
-                      <p className="mt-1 text-xs text-gray-400 dark:text-white/25">
-                        Recurring monthly subscription
+                      <p className="text-xs text-white/35">
+                        {subscription.cancelled_at
+                          ? `Your subscription will expire on ${new Date(
+                              subscription.expires_at!
+                            ).toLocaleDateString("en-US", {
+                              month: "long",
+                              day: "numeric",
+                              year: "numeric",
+                            })}`
+                          : `Next billing: ${new Date(
+                              subscription.expires_at!
+                            ).toLocaleDateString("en-US", {
+                              month: "long",
+                              day: "numeric",
+                              year: "numeric",
+                            })}`}
                       </p>
                     </div>
                   </div>
