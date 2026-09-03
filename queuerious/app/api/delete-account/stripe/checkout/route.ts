@@ -29,11 +29,12 @@ const PRODUCTS = {
   beyond: {
     priceId: process.env.STRIPE_PRICE_BEYOND!,
     type: "subscription",
+    tokens: 5,
   },
-
   mind: {
     priceId: process.env.STRIPE_PRICE_MIND!,
     type: "subscription",
+    tokens: 10,
   },
 } as const;
 
@@ -94,12 +95,7 @@ export async function POST(request: NextRequest) {
 
     const origin = request.headers.get("origin") || new URL(request.url).origin;
 
-    console.log("CHECKOUT REPLACEMENT:", {
-      userId,
-      productKey,
-      currentSubscription,
-      replacesSubscriptionId,
-    });
+    
 
     const session = await stripe.checkout.sessions.create({
       mode: product.type === "subscription" ? "subscription" : "payment",
@@ -117,7 +113,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         userId,
         product: productKey,
-        tokens: product.type === "tokens" ? String(product.tokens) : "0",
+        tokens: "tokens" in product ? String(product.tokens) : "0",
         replacesSubscriptionId: replacesSubscriptionId ?? "",
       },
     });

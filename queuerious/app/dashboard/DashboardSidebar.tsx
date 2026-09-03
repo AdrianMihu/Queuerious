@@ -12,41 +12,42 @@ import {
   SlidersHorizontal,
   User,
   CircleHelp,
+  Clock3,
   Zap,
 } from "lucide-react";
 
 type DashboardSidebarProps = {
   firstName: string;
   email: string;
+  activeSubscription: "beyond" | "mind" | null;
 };
 
 export default function DashboardSidebar({
   firstName,
   email,
+  activeSubscription,
 }: DashboardSidebarProps) {
   const pathname = usePathname();
-  const isQueueWaiting =
-  pathname === "/dashboard/queuemitment/waiting";
+  const isQueueWaiting = pathname === "/dashboard/queuemitment/waiting";
 
   async function handleNavigation() {
     console.log("🔥 HANDLE NAVIGATION", pathname);
     if (!isQueueWaiting) return;
-  
+
     const supabase = createClient();
-  
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
-  
+
     if (!user) return;
-  
+
     const { error } = await supabase.rpc("leave_queuemitment");
 
-console.log("🔥 LEAVE QUEUEMITMENT ERROR:", error);
+    console.log("🔥 LEAVE QUEUEMITMENT ERROR:", error);
 
-console.log("🔥 DISCARD ERROR:", error);
+    console.log("🔥 DISCARD ERROR:", error);
   }
-  
 
   const isChatActive = pathname.startsWith("/dashboard/queuemitment/chat");
 
@@ -76,7 +77,7 @@ console.log("🔥 DISCARD ERROR:", error);
       {/* QUEUE AND ME */}
 
       <div
-        className={`mx-4 mt-8 border-t border-gray-200 pt-3 dark:border-white/[0.07] ${navClass}`}
+        className={`mx-4 mt-4 border-t border-gray-200 pt-3 dark:border-white/[0.07] ${navClass}`}
       >
         <p className="mb-3 px-3 text-[11px] font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-white/25">
           Queue and me
@@ -85,7 +86,7 @@ console.log("🔥 DISCARD ERROR:", error);
         <Link
           href="/dashboard/how-it-works"
           onClick={handleNavigation}
-          className="group relative z-[60] flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-gray-500 transition hover:bg-violet-500/10 hover:text-violet-600 dark:text-white/50 dark:hover:text-violet-300"
+          className="group relative z-[60] flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-500 transition hover:bg-violet-500/10 hover:text-violet-600 dark:text-white/50 dark:hover:text-violet-300"
         >
           <CircleHelp size={18} />
           How it Works
@@ -98,7 +99,7 @@ console.log("🔥 DISCARD ERROR:", error);
         </p>
 
         {isChatActive && (
-          <div className="mt-8 rounded-2xl border border-violet-400/10 bg-violet-500/[0.05] p-4">
+          <div className="mt-4 rounded-2xl border border-violet-400/10 bg-violet-500/[0.05] p-4">
             <div className="flex items-center gap-2 text-sm font-medium text-violet-300">
               <div className="h-2 w-2 animate-pulse rounded-full bg-violet-400" />
               Conversation active
@@ -115,7 +116,7 @@ console.log("🔥 DISCARD ERROR:", error);
           <Link
             href="/dashboard"
             onClick={handleNavigation}
-            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
+            className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
           >
             <Home size={18} />
             Home
@@ -125,7 +126,7 @@ console.log("🔥 DISCARD ERROR:", error);
             id="tutorial-profile"
             href="/dashboard/profile"
             onClick={handleNavigation}
-            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
+            className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
           >
             <User size={18} />
             Profile
@@ -134,7 +135,7 @@ console.log("🔥 DISCARD ERROR:", error);
             id="tutorial-preferences"
             href="/dashboard/preferences"
             onClick={handleNavigation}
-            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
+            className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
           >
             <SlidersHorizontal size={18} />
             Preferences
@@ -143,14 +144,25 @@ console.log("🔥 DISCARD ERROR:", error);
           <Link
             href="/dashboard/matches"
             onClick={handleNavigation}
-            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
+            className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
           >
             <Heart size={18} />
             Matches
           </Link>
+
+          {activeSubscription === "mind" && (
+            <Link
+              href="/dashboard/queuemitment-history"
+              onClick={handleNavigation}
+              className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
+            >
+              <Clock3 size={18} />
+              Queuemitment History
+            </Link>
+          )}
         </div>
 
-        <div className="my-7 border-t border-gray-200 dark:border-white/[0.07]" />
+        <div className="my-5 border-t border-gray-200 dark:border-white/[0.07]" />
 
         <p className="mb-3 px-3 text-[11px] font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-white/25">
           Experience
@@ -161,7 +173,7 @@ console.log("🔥 DISCARD ERROR:", error);
             id="tutorial-queuemitment"
             href="/dashboard/queuemitment"
             onClick={handleNavigation}
-            className="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
+            className="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
           >
             <Zap size={18} className="transition group-hover:fill-violet-300" />
             Queuemitment
@@ -170,20 +182,20 @@ console.log("🔥 DISCARD ERROR:", error);
           <Link
             href="/dashboard/store"
             onClick={handleNavigation}
-            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
+            className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
           >
             <ShoppingBag size={18} />
             Store
           </Link>
         </div>
 
-        <div className="my-7 border-t border-gray-200 dark:border-white/[0.07]" />
+        <div className="my-5 border-t border-gray-200 dark:border-white/[0.07]" />
 
         <div className={navClass}>
           <Link
             href="/dashboard/settings"
             onClick={handleNavigation}
-            className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
+            className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white"
           >
             <Settings size={18} />
             Settings
@@ -192,7 +204,7 @@ console.log("🔥 DISCARD ERROR:", error);
           <Link
             href="/dashboard/debug"
             onClick={handleNavigation}
-            className={`mb-3 flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white ${navClass}`}
+            className={`mb-3 flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white ${navClass}`}
           >
             <Settings size={18} />
             Debug
@@ -200,22 +212,7 @@ console.log("🔥 DISCARD ERROR:", error);
         </div>
       </nav>
 
-      {/* Bottom */}
-      <div className="border-t border-gray-200 p-4 dark:border-white/[0.07]">
-        <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-3 dark:border-white/[0.07] dark:bg-white/[0.025]">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-700 text-sm font-semibold">
-            {firstName.charAt(0).toUpperCase()}
-          </div>
-
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium">{firstName}</p>
-
-            <p className="truncate text-xs text-gray-500 dark:text-white/35">
-              {email}
-            </p>
-          </div>
-        </div>
-      </div>
+    
     </aside>
   );
 }

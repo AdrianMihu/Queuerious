@@ -121,21 +121,21 @@ export default function HeaderActions({
               (current) => !current
             )
           }
-          className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${
+          className={`flex h-14 w-14 items-center justify-center rounded-2xl border transition ${
             profileOpen
               ? "border-violet-400/30 bg-violet-500/10 text-violet-600 dark:text-violet-300"
               : "border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:border-white/[0.07] dark:text-white/45 dark:hover:bg-white/[0.05] dark:hover:text-white"
           }`}
           aria-label="Profile menu"
         >
-          <CircleUserRound size={19} />
+          <CircleUserRound size={24} />
         </button>
 
 
         {/* PROFILE DROPDOWN */}
 
         {profileOpen && (
-          <div className="absolute right-0 top-[52px] z-50 w-[280px] animate-in fade-in zoom-in-95 duration-200">
+          <div className="absolute right-0 top-[68px] z-50 w-[280px] animate-in fade-in zoom-in-95 duration-200">
 
 <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white/95 shadow-2xl shadow-gray-900/10 backdrop-blur-xl dark:border-white/[0.09] dark:bg-[#121218]/95 dark:shadow-black/40">
 

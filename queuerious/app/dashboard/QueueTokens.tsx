@@ -8,12 +8,14 @@ type QueueTokensProps = {
   initialTokens: number;
   initialFreeTokenClaimedAt: string | null;
   userId: string;
+  activeSubscription: "beyond" | "mind" | null;
 };
 
 export default function QueueTokens({
   initialTokens,
   initialFreeTokenClaimedAt,
   userId,
+  activeSubscription,
 }: QueueTokensProps) {
   const [queueTokens, setQueueTokens] = useState(initialTokens);
 
@@ -31,12 +33,11 @@ export default function QueueTokens({
         .eq("user_id", userId)
         .maybeSingle();
 
-        if (!error && data) {
-          setQueueTokens(data.tokens);
-          setFreeTokenClaimedAt(data.free_token_claimed_at);
-        }
+      if (!error && data) {
+        setQueueTokens(data.tokens);
+        setFreeTokenClaimedAt(data.free_token_claimed_at);
+      }
     }
-    
 
     fetchTokens();
 
@@ -45,11 +46,13 @@ export default function QueueTokens({
     return () => clearInterval(interval);
   }, [userId]);
 
- 
-
   const [now, setNow] = useState(0);
 
   const [isClaiming, setIsClaiming] = useState(false);
+
+  const isAutomaticCollection = activeSubscription !== null;
+
+  const cooldownHours = isAutomaticCollection ? 6 : 8;
 
   /*
     Keep the countdown updating every second
@@ -68,14 +71,15 @@ export default function QueueTokens({
   */
 
   const nextFreeTokenAt = freeTokenClaimedAt
-    ? new Date(freeTokenClaimedAt).getTime() + 8 * 60 * 60 * 1000
+    ? new Date(freeTokenClaimedAt).getTime() + cooldownHours * 60 * 60 * 1000
     : null;
 
   const remainingTime = nextFreeTokenAt
     ? Math.max(nextFreeTokenAt - now, 0)
     : 0;
 
-  const canClaim = !freeTokenClaimedAt || remainingTime === 0;
+  const canClaim =
+    !isAutomaticCollection && (!freeTokenClaimedAt || remainingTime === 0);
 
   /*
     Format countdown
@@ -107,23 +111,11 @@ export default function QueueTokens({
     const { data, error } = await supabase.rpc("claim_free_queue_token");
 
     if (error) {
-      console.error(
-        "CLAIM ERROR MESSAGE:",
-        error.message
-      );
-      console.error(
-        "CLAIM ERROR CODE:",
-        error.code
-      );
-      console.error(
-        "CLAIM ERROR DETAILS:",
-        error.details
-      );
-      console.error(
-        "CLAIM ERROR HINT:",
-        error.hint
-      );
-    
+      console.error("CLAIM ERROR MESSAGE:", error.message);
+      console.error("CLAIM ERROR CODE:", error.code);
+      console.error("CLAIM ERROR DETAILS:", error.details);
+      console.error("CLAIM ERROR HINT:", error.hint);
+
       setIsClaiming(false);
       return;
     }
@@ -168,30 +160,50 @@ export default function QueueTokens({
 
       <button
         onClick={handleClaimFreeToken}
-        disabled={!canClaim || isClaiming}
+        disabled={isAutomaticCollection || !canClaim || isClaiming}
         className={`flex items-center gap-3 rounded-full border px-4 py-2 transition ${
-          canClaim
+          isAutomaticCollection
+            ? "cursor-default border-cyan-400/15 bg-cyan-400/[0.04]"
+            : canClaim
             ? "border-violet-400/20 bg-violet-500/10 hover:bg-violet-500/20"
             : "cursor-not-allowed border-white/[0.07] bg-white/[0.02] opacity-60"
         }`}
       >
         <div
           className={`flex h-7 w-7 items-center justify-center rounded-full ${
-            canClaim ? "bg-violet-500/15" : "bg-white/[0.05]"
+            isAutomaticCollection
+              ? "bg-cyan-400/10"
+              : canClaim
+              ? "bg-violet-500/15"
+              : "bg-white/[0.05]"
           }`}
         >
-          {canClaim ? (
+          {isAutomaticCollection ? (
+            <Gift size={15} className="text-cyan-400/80" />
+          ) : canClaim ? (
             <Gift size={15} className="text-violet-300" />
           ) : (
             <Clock size={15} className="text-white/40" />
           )}
         </div>
 
-        <div className="text-left">
-          <p className="text-xs font-medium">Free queue token</p>
+        <div className="text-center">
+          <p className="text-xs font-medium">
+            {isAutomaticCollection
+              ? "Automatic collection active"
+              : "Free queue token"}
+          </p>
 
-          <p className="text-[10px] text-white/35">
-            {isClaiming
+          <p
+            className={`text-[10px] ${
+              isAutomaticCollection ? "text-cyan-400/60" : "text-white/35"
+            }`}
+          >
+            {isAutomaticCollection
+              ? remainingTime === 0
+                ? "Collecting automatically..."
+                : formatRemainingTime(remainingTime)
+              : isClaiming
               ? "Collecting..."
               : canClaim
               ? "Collect now"

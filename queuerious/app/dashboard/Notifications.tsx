@@ -215,14 +215,14 @@ useEffect(() => {
 
       <button
         onClick={handleOpenNotifications}
-        className={`relative flex h-10 w-10 items-center justify-center rounded-xl border transition ${
+        className={`relative flex h-14 w-14 items-center justify-center rounded-2xl border transition ${
           open
             ? "border-violet-400/30 bg-violet-500/10 text-violet-600 dark:text-violet-300"
             : "border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:border-white/[0.07] dark:text-white/45 dark:hover:bg-white/[0.05] dark:hover:text-white"
         }`}
         aria-label="Notifications"
       >
-        <Bell size={18} />
+        <Bell size={24} />
 
         {hasNotifications && (
           <>

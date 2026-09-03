@@ -97,3 +97,26 @@ body {
     #8b5cf6
   );
 }
+
+/* Queuemitment premium scrollbar */
+.queuemitment-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(167, 139, 250, 0.28) transparent;
+}
+
+.queuemitment-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.queuemitment-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.queuemitment-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(167, 139, 250, 0.28);
+  border-radius: 999px;
+}
+
+.queuemitment-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(167, 139, 250, 0.5);
+}

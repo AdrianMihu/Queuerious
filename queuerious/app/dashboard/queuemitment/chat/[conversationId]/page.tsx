@@ -645,7 +645,7 @@ export default function QueuemitmentChatPage() {
   }
 
   return (
-    <section className="flex flex-1 flex-col">
+    <section className="flex h-[calc(100vh-80px)] min-h-0 flex-1 flex-col overflow-hidden">
       {/* HEADER */}
 
       <header className="flex shrink-0 items-center justify-between border-b border-white/[0.07] px-6 py-5 lg:px-10">
@@ -770,7 +770,7 @@ export default function QueuemitmentChatPage() {
 
       {/* MESSAGES */}
 
-      <div className="flex flex-1 flex-col px-6 py-8 lg:px-10">
+      <div className="queuemitment-scrollbar min-h-0 flex-1 overflow-y-auto px-6 py-8 lg:px-10">
         <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4">
           {messages.length === 0 && (
             <div className="flex flex-1 flex-col items-center justify-center text-center">

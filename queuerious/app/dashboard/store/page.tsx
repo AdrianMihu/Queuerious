@@ -259,7 +259,7 @@ export default function StorePage() {
                   ? "Skip ahead of standard queue members and get matched sooner when spaces become available."
                   : infoPopup === "history"
                   ? "Keep the latest 10 Queuemitments where you connected in chat but didn't end up matching. Read the conversations anytime and take note of what worked and what didn't."
-                  : "Your free Queue Token is collected automatically as soon as its cooldown expires. You don't need to open the app or claim it manually — Queuerious takes care of it for you."}
+                  : "Your free Queue Token is collected automatically as soon as its cooldown expires. You don't need to open the app or claim it manually. Queuerious takes care of it for you."}
               </p>
 
               <button

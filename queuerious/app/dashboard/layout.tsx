@@ -83,12 +83,16 @@ export default async function DashboardLayout({
     <main className="min-h-screen bg-[#f7f7fb] text-gray-900 dark:bg-[#09090d] dark:text-white">
       <div className="flex min-h-screen">
         {/* SIDEBAR */}
-        <DashboardSidebar firstName={firstName} email={email} />
+        <DashboardSidebar
+          firstName={firstName}
+          email={email}
+          activeSubscription={activeSubscription}
+        />
 
         {/* MAIN APP */}
         <div className="flex min-w-0 flex-1 flex-col">
           {/* TOP BAR */}
-          <header className="flex h-20 shrink-0 items-center justify-between border-b border-white/[0.07] px-6 lg:px-10">
+          <header className="sticky top-0 z-50 flex h-20 shrink-0 items-center justify-between border-b border-white/[0.07] bg-[#09090d] px-6 lg:px-10">
             {/* Mobile logo */}
             <div className="flex items-center gap-3 lg:hidden">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 font-bold text-violet-300">
@@ -150,6 +154,7 @@ export default async function DashboardLayout({
                   tokenData?.free_token_claimed_at ?? null
                 }
                 userId={userId}
+                activeSubscription={activeSubscription}
               />
 
               {typeof userId === "string" && (

@@ -229,10 +229,10 @@ export default function SettingsPage() {
           {/* Subscription */}
           <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm transition-colors duration-300 dark:border-white/[0.07] dark:bg-white/[0.025] dark:shadow-none">
             <div className="mb-6">
-              <h2 className="text-base font-semibold">Subscription</h2>
+              <h2 className="text-base font-semibold">Membership</h2>
 
               <p className="mt-1 text-sm text-gray-500 dark:text-white/40">
-                Manage your Queuerious subscription.
+                Manage your Queuerious membership.
               </p>
             </div>
 
@@ -315,7 +315,7 @@ export default function SettingsPage() {
                     onClick={() => setShowCancelSubscription(true)}
                     className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-300 transition hover:bg-red-500/20"
                   >
-                    Cancel subscription
+                    Cancel membership
                   </button>
                 </div>
               </div>

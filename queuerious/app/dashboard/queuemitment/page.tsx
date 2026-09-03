@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -31,7 +31,32 @@ export default function QueuemitmentPage() {
   const [showPreferencesRequiredModal, setShowPreferencesRequiredModal] =
     useState(false);
 
-  const hasPriorityAccess = false;
+  const [hasPriorityAccess, setHasPriorityAccess] = useState(false);
+
+  useEffect(() => {
+    async function checkPriorityAccess() {
+      const supabase = createClient();
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("subscriptions")
+        .select("plan")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .gt("expires_at", new Date().toISOString())
+        .eq("plan", "mind")
+        .maybeSingle();
+
+      setHasPriorityAccess(!!data);
+    }
+
+    checkPriorityAccess();
+  }, []);
 
   const handleEnterQueue = async () => {
     if (!selectedQueue || isEnteringQueue) return;
@@ -303,54 +328,66 @@ export default function QueuemitmentPage() {
             <button
               type="button"
               onClick={() => setSelectedQueue("priority")}
-              className={`group relative overflow-hidden rounded-[32px] border p-8 text-left transition sm:p-10 ${
+              className={`group relative overflow-hidden rounded-[32px] border p-8 text-left transition-all duration-300 sm:p-10 ${
                 selectedQueue === "priority"
-                  ? "border-cyan-400/50 bg-cyan-500/[0.10] shadow-2xl shadow-cyan-950/30"
-                  : "border-cyan-400/20 bg-gradient-to-br from-cyan-500/[0.10] via-[#11171b] to-[#101015] hover:-translate-y-1 hover:border-cyan-400/40"
+                  ? "border-cyan-400/60 bg-cyan-500/[0.12] shadow-2xl shadow-cyan-950/40"
+                  : "border-cyan-400/25 bg-gradient-to-br from-cyan-500/[0.12] via-[#0d171b] to-[#101015] hover:-translate-y-1 hover:border-cyan-400/45 hover:shadow-[0_20px_60px_rgba(34,211,238,0.10)]"
               }`}
             >
-              <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-cyan-400/15 blur-[100px] transition group-hover:bg-cyan-400/25" />
+              <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-cyan-500/15 blur-[100px] transition-all duration-500 group-hover:bg-cyan-500/25" />
+              <div className="absolute -bottom-32 -left-20 h-56 w-56 rounded-full bg-cyan-600/[0.06] blur-[90px]" />
 
               <div className="relative">
                 <div className="flex items-start justify-between">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10">
-                    <Zap size={28} className="fill-cyan-300 text-cyan-300" />
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-400/25 bg-cyan-500/10 shadow-[0_0_30px_rgba(34,211,238,0.10)]">
+                    <Crown size={29} className="text-cyan-300" />
                   </div>
 
-                  <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-200">
-                    Priority Access
+                  <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">
+                    AVAILABLE
                   </span>
                 </div>
 
                 <div className="mt-10">
                   <p className="text-sm font-medium uppercase tracking-[0.18em] text-cyan-300">
-                    Priority
+                    Priority Access
                   </p>
 
-                  <h2 className="mt-2 text-3xl font-semibold">
-                    Priority Queue
+                  <h2 className="mt-2 text-3xl font-semibold text-white">
+                    Jump to the front.
                   </h2>
 
                   <p className="mt-4 max-w-md leading-relaxed text-white/45">
-                    Less waiting. More curiosity. Priority members move ahead in
-                    the matchmaking queue.
+                    Skip ahead of the standard queue and get discovered faster.
+                    Priority Queue is exclusively available with Queuerious
+                    Mind.
                   </p>
                 </div>
 
-                <div className="mt-10 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-cyan-200/60">
+                <div className="mt-8 rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.04] px-4 py-3">
+                  <div className="flex items-center gap-2 text-sm text-cyan-200/75">
+                    <Zap size={16} className="text-cyan-300" />
+                    <span>You&apos;re ahead of Standard Queue members.</span>
+                  </div>
+                </div>
+
+                <div className="mt-8 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-cyan-200/55">
                     <Crown size={16} />
-                    Membership benefit
+                    <span>Included with Mind</span>
                   </div>
 
                   <div
-                    className={`flex h-11 w-11 items-center justify-center rounded-xl transition ${
+                    className={`flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-300 ${
                       selectedQueue === "priority"
-                        ? "bg-cyan-400 text-[#071014]"
-                        : "bg-cyan-400/10 text-cyan-200 group-hover:bg-cyan-400/20"
+                        ? "bg-cyan-400 text-[#071014] shadow-[0_0_25px_rgba(34,211,238,0.25)]"
+                        : "bg-cyan-400/10 text-cyan-200 group-hover:bg-cyan-400/20 group-hover:text-cyan-100"
                     }`}
                   >
-                    <ArrowRight size={19} />
+                    <Zap
+                      size={19}
+                      className="transition-transform duration-300 group-hover:scale-110"
+                    />
                   </div>
                 </div>
               </div>
