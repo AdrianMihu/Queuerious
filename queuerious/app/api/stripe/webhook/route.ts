@@ -30,9 +30,45 @@ export async function POST(request: NextRequest) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
+    const stripeSubscriptionId =
+      typeof session.subscription === "string"
+        ? session.subscription
+        : session.subscription?.id;
 
     const userId = session.metadata?.userId;
     const tokens = Number(session.metadata?.tokens ?? 0);
+    const product = session.metadata?.product;
+
+    if (product === "beyond" || product === "mind") {
+      const startedAt = new Date();
+      const expiresAt = new Date(startedAt);
+      expiresAt.setMonth(expiresAt.getMonth() + 1);
+
+      const { error } = await supabaseAdmin.from("subscriptions").upsert(
+        {
+          user_id: userId,
+          plan: product,
+          status: "active",
+          started_at: startedAt.toISOString(),
+          expires_at: expiresAt.toISOString(),
+          stripe_subscription_id: stripeSubscriptionId,
+          cancelled_at: null,
+          updated_at: startedAt.toISOString(),
+        },
+        {
+          onConflict: "user_id",
+        }
+      );
+
+      if (error) {
+        console.error("Subscription activation error:", error);
+        return new NextResponse("Failed to activate subscription", {
+          status: 500,
+        });
+      }
+
+      console.log("SUBSCRIPTION ACTIVATED:", product, userId);
+    }
 
     if (userId && tokens > 0) {
       const { data, error } = await supabaseAdmin.rpc(
@@ -50,6 +86,27 @@ export async function POST(request: NextRequest) {
 
       console.log("PURCHASE TOKENS ADDED:", data);
     }
+  }
+
+  if (event.type === "customer.subscription.deleted") {
+    const subscription = event.data.object;
+  
+    const { error } = await supabaseAdmin
+      .from("subscriptions")
+      .update({
+        status: "cancelled",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("stripe_subscription_id", subscription.id);
+  
+    if (error) {
+      console.error("Subscription expiration update error:", error);
+      return new NextResponse("Failed to update subscription", {
+        status: 500,
+      });
+    }
+  
+    console.log("SUBSCRIPTION EXPIRED:", subscription.id);
   }
 
   return NextResponse.json({ received: true });

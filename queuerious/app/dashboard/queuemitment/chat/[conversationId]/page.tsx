@@ -49,6 +49,8 @@ export default function QueuemitmentChatPage() {
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+  const [otherUserGender, setOtherUserGender] = useState<string | null>(null);
+
   const [messages, setMessages] = useState<Message[]>([]);
 
   const [newMessage, setNewMessage] = useState("");
@@ -163,16 +165,33 @@ export default function QueuemitmentChatPage() {
         return;
       }
 
+      const otherUserId =
+        user.id === conversationData.user_one_id
+          ? conversationData.user_two_id
+          : conversationData.user_one_id;
+
+      const { data: otherProfile, error: otherProfileError } = await supabase
+        .from("profiles")
+        .select("gender")
+        .eq("id", otherUserId)
+        .maybeSingle();
+
+      if (otherProfileError) {
+        console.error("Error loading other user's profile:", otherProfileError);
+      } else {
+        setOtherUserGender(otherProfile?.gender ?? null);
+      }
+
       const { data: serverTime, error: serverTimeError } = await supabase.rpc(
         "get_server_time"
       );
-      
+
       if (serverTimeError || !serverTime) {
         console.error("Error getting server time:", serverTimeError);
       } else {
         const serverNow = new Date(serverTime).getTime();
         const browserNow = Date.now();
-      
+
         setServerTimeOffset(serverNow - browserNow);
       }
 
@@ -341,59 +360,49 @@ export default function QueuemitmentChatPage() {
     CONVERSATION TIMER
   */
 
-    useEffect(() => {
-      if (!conversation?.expires_at) return;
-    
-      const updateTimer = async () => {
-        const expiresAt = new Date(
-          conversation.expires_at
-        ).getTime();
-    
-        const now = Date.now();
-    
-        const difference = Math.max(
-          0,
-          Math.floor((expiresAt - now) / 1000)
-        );
-    
-        setSecondsLeft(difference);
-    
-        if (difference <= 0) {
-          const supabase = createClient();
-    
-          // Setăm începutul Reveal-ului doar dacă nu există deja
-          if (!conversation.reveal_started_at) {
-            const { error } = await supabase
-              .from("queuemitment_conversations")
-              .update({
-                reveal_started_at: new Date().toISOString(),
-              })
-              .eq("id", conversationId)
-              .is("reveal_started_at", null);
-    
-            if (error) {
-              console.error(
-                "Error starting reveal timer:",
-                error
-              );
-              return;
-            }
+  useEffect(() => {
+    if (!conversation?.expires_at) return;
+
+    const updateTimer = async () => {
+      const expiresAt = new Date(conversation.expires_at).getTime();
+
+      const now = Date.now();
+
+      const difference = Math.max(0, Math.floor((expiresAt - now) / 1000));
+
+      setSecondsLeft(difference);
+
+      if (difference <= 0) {
+        const supabase = createClient();
+
+        // Setăm începutul Reveal-ului doar dacă nu există deja
+        if (!conversation.reveal_started_at) {
+          const { error } = await supabase
+            .from("queuemitment_conversations")
+            .update({
+              reveal_started_at: new Date().toISOString(),
+            })
+            .eq("id", conversationId)
+            .is("reveal_started_at", null);
+
+          if (error) {
+            console.error("Error starting reveal timer:", error);
+            return;
           }
-    
-          router.push(
-            `/dashboard/queuemitment/reveal/${conversationId}`
-          );
         }
-      };
-    
+
+        router.push(`/dashboard/queuemitment/reveal/${conversationId}`);
+      }
+    };
+
+    updateTimer();
+
+    const interval = setInterval(() => {
       updateTimer();
-    
-      const interval = setInterval(() => {
-        updateTimer();
-      }, 1000);
-    
-      return () => clearInterval(interval);
-    }, [conversation, conversationId, router]);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [conversation, conversationId, router]);
 
   /*
   REALTIME MESSAGES
@@ -431,138 +440,127 @@ export default function QueuemitmentChatPage() {
     SEND MESSAGE
   */
 
-    const sendMessage = async () => {
-      const trimmedMessage = newMessage.trim();
-    
-      if (
-        !trimmedMessage ||
-        !currentUserId ||
-        !conversationId ||
-        trimmedMessage.length > 1000
-      ) {
-        return;
-      }
-    
-      const supabase = createClient();
-    
-      const { error } = await supabase
-        .from("conversation_messages")
-        .insert({
-          conversation_id: conversationId,
-          sender_id: currentUserId,
-          message_type: "message",
-          content: trimmedMessage,
-        });
-    
-      if (error) {
-        console.error("Error sending message");
-        console.error("message:", error.message);
-        console.error("details:", error.details);
-        console.error("hint:", error.hint);
-        console.error("code:", error.code);
-    
-        console.error(JSON.stringify(error, null, 2));
-    
-        return;
-      }
-    
-      setNewMessage("");
-    };
+  const sendMessage = async () => {
+    const trimmedMessage = newMessage.trim();
 
-    /*
+    if (
+      !trimmedMessage ||
+      !currentUserId ||
+      !conversationId ||
+      trimmedMessage.length > 1000
+    ) {
+      return;
+    }
+
+    const supabase = createClient();
+
+    const { error } = await supabase.from("conversation_messages").insert({
+      conversation_id: conversationId,
+      sender_id: currentUserId,
+      message_type: "message",
+      content: trimmedMessage,
+    });
+
+    if (error) {
+      console.error("Error sending message");
+      console.error("message:", error.message);
+      console.error("details:", error.details);
+      console.error("hint:", error.hint);
+      console.error("code:", error.code);
+
+      console.error(JSON.stringify(error, null, 2));
+
+      return;
+    }
+
+    setNewMessage("");
+  };
+
+  /*
     Test Debug Button Skip Time
   */
-    const handleTestSkipTime = async () => {
-        if (!conversationId) return;
-      
-        const supabase = createClient();
-      
-        console.log("TEST: Skipping 4 minutes and 30 seconds");
-      
-        // Luăm timpul actual de expirare
-        const { data: conversationData, error: fetchError } = await supabase
-          .from("queuemitment_conversations")
-          .select("expires_at")
-          .eq("id", conversationId)
-          .single();
-      
-        if (fetchError || !conversationData) {
-          console.error("TEST: Could not get conversation:", fetchError);
-          return;
-        }
-      
-        // Scădem 4 minute și 30 secunde
-        const currentExpiresAt = new Date(conversationData.expires_at);
-      
-        const newExpiresAt = new Date(
-          currentExpiresAt.getTime() - 4.5 * 60 * 1000
-        );
-      
-        const { data, error } = await supabase
-          .from("queuemitment_conversations")
-          .update({
-            expires_at: newExpiresAt.toISOString(),
-          })
-          .eq("id", conversationId)
-          .select()
-          .single();
-      
-        if (error) {
-          console.error("TEST: Failed to skip time:", error);
-          return;
-        }
-      
-        console.log("TEST: Time skipped successfully:", data);
-      };
+  const handleTestSkipTime = async () => {
+    if (!conversationId) return;
 
-      
-    /*
+    const supabase = createClient();
+
+    console.log("TEST: Skipping 4 minutes and 30 seconds");
+
+    // Luăm timpul actual de expirare
+    const { data: conversationData, error: fetchError } = await supabase
+      .from("queuemitment_conversations")
+      .select("expires_at")
+      .eq("id", conversationId)
+      .single();
+
+    if (fetchError || !conversationData) {
+      console.error("TEST: Could not get conversation:", fetchError);
+      return;
+    }
+
+    // Scădem 4 minute și 30 secunde
+    const currentExpiresAt = new Date(conversationData.expires_at);
+
+    const newExpiresAt = new Date(currentExpiresAt.getTime() - 4.5 * 60 * 1000);
+
+    const { data, error } = await supabase
+      .from("queuemitment_conversations")
+      .update({
+        expires_at: newExpiresAt.toISOString(),
+      })
+      .eq("id", conversationId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("TEST: Failed to skip time:", error);
+      return;
+    }
+
+    console.log("TEST: Time skipped successfully:", data);
+  };
+
+  /*
     End debug button
   */
 
-    const leaveChat = async () => {
-      isEndingConversationRef.current = true;
-    
-      const supabase = createClient();
-    
-      const { error } = await supabase.rpc(
-        "leave_queuemitment_chat",
-        {
-          p_conversation_id: conversationId,
-        }
-      );
-    
-      if (error) {
-        console.error("Error leaving chat:", error);
-        return;
-      }
-    
-      window.location.href = "/dashboard/queuemitment";
-    };
+  const leaveChat = async () => {
+    isEndingConversationRef.current = true;
 
-    const submitReport = async () => {
-      if (!reportReason) return;
-    
-      isEndingConversationRef.current = true;
-    
-      const supabase = createClient();
-    
-      const { error } = await supabase.rpc(
-        "leave_queuemitment_chat",
-        {
-          p_conversation_id: conversationId,
-        }
-      );
-    
-      if (error) {
-        console.error("Error reporting conversation:", error);
-        return;
-      }
-    
-      setShowReportModal(false);
-    
-      window.location.href = "/dashboard/queuemitment?report=success";
-    };
+    const supabase = createClient();
+
+    const { error } = await supabase.rpc("leave_queuemitment_chat", {
+      p_conversation_id: conversationId,
+    });
+
+    if (error) {
+      console.error("Error leaving chat:", error);
+      return;
+    }
+
+    window.location.href = "/dashboard/queuemitment";
+  };
+
+  const submitReport = async () => {
+    if (!reportReason) return;
+
+    isEndingConversationRef.current = true;
+
+    const supabase = createClient();
+
+    const { error } = await supabase.rpc("leave_queuemitment_chat", {
+      p_conversation_id: conversationId,
+    });
+
+    if (error) {
+      console.error("Error reporting conversation:", error);
+      return;
+    }
+
+    setShowReportModal(false);
+
+    window.location.href = "/dashboard/queuemitment?report=success";
+  };
 
   const requestExtension = async () => {
     if (!conversation || !currentUserId || extensionUsed || secondsLeft === 0) {
@@ -662,7 +660,9 @@ export default function QueuemitmentChatPage() {
 
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-semibold">Someone</h1>
+              <h1 className="font-semibold">
+                Someone{otherUserGender ? ` · ${otherUserGender}` : ""}
+              </h1>
 
               {secondsLeft !== 0 && (
                 <Circle size={7} className="fill-violet-300 text-violet-300" />
@@ -835,65 +835,65 @@ export default function QueuemitmentChatPage() {
       {/* MESSAGE INPUT */}
 
       <div className="border-t border-white/[0.07] px-6 py-5 lg:px-10">
-      <div className="mx-auto flex w-full max-w-3xl items-end gap-3">
-      <div className="relative">
-  <button
-    type="button"
-    onClick={() => setShowEmojiPicker((current) => !current)}
-    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.04] text-white/45 transition hover:border-violet-400/30 hover:bg-violet-500/[0.08] hover:text-violet-300"
-    aria-label="Open emoji picker"
-  >
-    <Smile size={20} />
-  </button>
+        <div className="mx-auto flex w-full max-w-3xl items-end gap-3">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker((current) => !current)}
+              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.04] text-white/45 transition hover:border-violet-400/30 hover:bg-violet-500/[0.08] hover:text-violet-300"
+              aria-label="Open emoji picker"
+            >
+              <Smile size={20} />
+            </button>
 
-  {showEmojiPicker && (
-    <div className="absolute bottom-16 left-0 z-40 w-72 rounded-2xl border border-white/[0.1] bg-[#16161f] p-3 shadow-2xl">
-      <div className="grid grid-cols-6 gap-1">
-        {emojis.map((emoji) => (
+            {showEmojiPicker && (
+              <div className="absolute bottom-16 left-0 z-40 w-72 rounded-2xl border border-white/[0.1] bg-[#16161f] p-3 shadow-2xl">
+                <div className="grid grid-cols-6 gap-1">
+                  {emojis.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => {
+                        setNewMessage((current) =>
+                          `${current}${emoji}`.slice(0, 1000)
+                        );
+                        setShowEmojiPicker(false);
+                      }}
+                      className="flex h-10 w-10 items-center justify-center rounded-xl text-xl transition hover:bg-white/[0.08]"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="flex-1">
+            <input
+              value={newMessage}
+              maxLength={1000}
+              onChange={(event) => setNewMessage(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  sendMessage();
+                }
+              }}
+              placeholder="Say something worth discovering..."
+              className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.04] px-5 py-4 text-sm outline-none placeholder:text-white/25 focus:border-violet-400/40"
+            />
+
+            <p className="mt-1.5 text-right text-[10px] text-white/25">
+              {newMessage.length} / 1000
+            </p>
+          </div>
+
           <button
-            key={emoji}
-            type="button"
-            onClick={() => {
-              setNewMessage((current) =>
-                `${current}${emoji}`.slice(0, 1000)
-              );
-              setShowEmojiPicker(false);
-            }}
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-xl transition hover:bg-white/[0.08]"
+            onClick={sendMessage}
+            disabled={!newMessage.trim()}
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-violet-500 text-white transition hover:bg-violet-400 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {emoji}
+            <Send size={19} />
           </button>
-        ))}
-      </div>
-    </div>
-  )}
-</div>
-<div className="flex-1">
-  <input
-    value={newMessage}
-    maxLength={1000}
-    onChange={(event) => setNewMessage(event.target.value)}
-    onKeyDown={(event) => {
-      if (event.key === "Enter") {
-        sendMessage();
-      }
-    }}
-    placeholder="Say something worth discovering..."
-    className="w-full rounded-2xl border border-white/[0.08] bg-white/[0.04] px-5 py-4 text-sm outline-none placeholder:text-white/25 focus:border-violet-400/40"
-  />
-
-  <p className="mt-1.5 text-right text-[10px] text-white/25">
-    {newMessage.length} / 1000
-  </p>
-</div>
-
-<button
-  onClick={sendMessage}
-  disabled={!newMessage.trim()}
-  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-violet-500 text-white transition hover:bg-violet-400 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
->
-  <Send size={19} />
-</button>
         </div>
       </div>
       {/* LEAVE MODAL */}
@@ -931,11 +931,11 @@ export default function QueuemitmentChatPage() {
       {/* Debug Button */}
 
       <button
-  onClick={handleTestSkipTime}
-  className="rounded-xl border border-violet-400/20 bg-violet-500/10 px-4 py-2 text-xs font-medium text-violet-300 transition hover:bg-violet-500/20"
->
-  TEST · Skip 4:30
-</button>
+        onClick={handleTestSkipTime}
+        className="rounded-xl border border-violet-400/20 bg-violet-500/10 px-4 py-2 text-xs font-medium text-violet-300 transition hover:bg-violet-500/20"
+      >
+        TEST · Skip 4:30
+      </button>
 
       {/* REPORT MODAL */}
 

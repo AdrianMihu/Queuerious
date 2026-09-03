@@ -19,15 +19,14 @@ import {
 } from "lucide-react";
 
 export default function SettingsPage() {
-  
-
-
   const [newPassword, setNewPassword] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [subscription, setSubscription] = useState<{
     id: string;
     plan: string;
     started_at: string;
+    expires_at: string | null;
+    stripe_subscription_id: string | null;
   } | null>(null);
 
   const [loadingSubscription, setLoadingSubscription] = useState(true);
@@ -52,9 +51,10 @@ export default function SettingsPage() {
 
       const { data, error } = await supabase
         .from("subscriptions")
-        .select("id, plan, started_at")
+        .select("id, plan, started_at, expires_at, stripe_subscription_id")
         .eq("user_id", user.id)
         .eq("status", "active")
+        .gt("expires_at", new Date().toISOString())
         .maybeSingle();
 
       if (error) {
@@ -125,30 +125,34 @@ export default function SettingsPage() {
   }
 
   async function handleCancelSubscription() {
-    if (!subscription) return;
-
+    if (!subscription?.stripe_subscription_id) return;
+  
     setCancellingSubscription(true);
-
-    const supabase = createClient();
-
-    const { error } = await supabase
-      .from("subscriptions")
-      .update({
-        status: "cancelled",
-        cancelled_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", subscription.id);
-
-    if (error) {
-      console.error("Error cancelling subscription:", error);
+  
+    try {
+      const response = await fetch("/api/stripe/cancel-subscription", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          subscriptionId: subscription.stripe_subscription_id,
+        }),
+      });
+  
+      const data = await response.json();
+  
+      if (!response.ok) {
+        console.error("Error cancelling subscription:", data);
+        return;
+      }
+  
+      setShowCancelSubscription(false);
+    } catch (error) {
+      console.error("Unexpected cancellation error:", error);
+    } finally {
       setCancellingSubscription(false);
-      return;
     }
-
-    setSubscription(null);
-    setShowCancelSubscription(false);
-    setCancellingSubscription(false);
   }
 
   return (
@@ -174,8 +178,6 @@ export default function SettingsPage() {
         </div>
 
         <div className="space-y-6">
-          
-
           {/* Security */}
           <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm transition-colors duration-300 dark:border-white/[0.07] dark:bg-white/[0.025] dark:shadow-none">
             <div className="mb-6">
@@ -410,7 +412,8 @@ export default function SettingsPage() {
             </p>
 
             <p className="mt-2 text-sm leading-relaxed text-gray-400 dark:text-white/30">
-              You&apos;ll immediately return to the free Queuerious plan.
+              Your subscription will remain active until the end of your current
+              billing period.
             </p>
 
             <div className="mt-7 flex justify-end gap-3">
