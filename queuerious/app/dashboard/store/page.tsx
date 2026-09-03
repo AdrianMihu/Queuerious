@@ -11,6 +11,11 @@ import {
   Infinity,
   Sparkles,
   X,
+  Ban,
+  Clock3,
+  MessageSquare,
+  CircleHelp,
+  Ticket,
   Zap,
 } from "lucide-react";
 
@@ -25,8 +30,18 @@ type ModalType =
 export default function StorePage() {
   const [selectedProduct, setSelectedProduct] = useState<ModalType>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+  const [infoPopup, setInfoPopup] = useState<
+    "priority" | "history" | "auto-token" | null
+  >(null);
+
+  const [infoPopupPlan, setInfoPopupPlan] = useState<"beyond" | "mind" | null>(
+    null
+  );
 
   const [queueTokens, setQueueTokens] = useState(0);
+  const [activeSubscription, setActiveSubscription] = useState<
+    "beyond" | "mind" | null
+  >(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -39,6 +54,23 @@ export default function StorePage() {
       } = await supabase.auth.getUser();
 
       if (!user) return;
+
+      const { data: subscriptionData } = await supabase
+        .from("subscriptions")
+        .select("plan")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+
+      if (
+        subscriptionData?.plan === "beyond" ||
+        subscriptionData?.plan === "mind"
+      ) {
+        setActiveSubscription(subscriptionData.plan);
+      } else {
+        setActiveSubscription(null);
+      }
 
       // 1. Load current tokens
       const { data, error } = await supabase
@@ -128,24 +160,24 @@ export default function StorePage() {
 
       const responseText = await response.text();
 
-console.log("Checkout status:", response.status);
-console.log("Checkout response:", responseText);
+      console.log("Checkout status:", response.status);
+      console.log("Checkout response:", responseText);
 
-let data;
+      let data;
 
-try {
-  data = JSON.parse(responseText);
-} catch {
-  console.error("Response was not JSON:", responseText);
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        console.error("Response was not JSON:", responseText);
 
-  alert(
-    `Checkout returned an unexpected response. Status: ${response.status}`
-  );
+        alert(
+          `Checkout returned an unexpected response. Status: ${response.status}`
+        );
 
-  return;
-}
+        return;
+      }
 
-if (!response.ok) {
+      if (!response.ok) {
         console.error("Checkout error:", data);
         alert(data.error || "Unable to start checkout.");
         return;
@@ -165,6 +197,88 @@ if (!response.ok) {
   return (
     <main className="min-h-screen bg-[#09090d] text-white">
       <section className="px-6 py-10 lg:px-10 xl:px-16">
+        {infoPopup && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-6 backdrop-blur-sm">
+            <div
+              className={`relative w-full max-w-md rounded-[28px] border p-7 shadow-2xl ${
+                infoPopupPlan === "beyond"
+                  ? "border-violet-400/20 bg-[#171321] shadow-violet-950/30"
+                  : "border-cyan-400/20 bg-[#10171b] shadow-cyan-950/30"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setInfoPopup(null);
+                  setInfoPopupPlan(null);
+                }}
+                className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-xl text-white/30 transition hover:bg-white/[0.06] hover:text-white"
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+
+              <div
+                className={`flex h-12 w-12 items-center justify-center rounded-2xl border ${
+                  infoPopupPlan === "beyond"
+                    ? "border-violet-400/20 bg-violet-500/10 text-violet-300"
+                    : "border-cyan-400/20 bg-cyan-400/10 text-cyan-300"
+                }`}
+              >
+                {infoPopup === "priority" ? (
+                  <Zap size={21} />
+                ) : infoPopup === "history" ? (
+                  <MessageSquare size={21} />
+                ) : (
+                  <Ticket size={21} />
+                )}
+              </div>
+
+              <p
+                className={`mt-6 text-xs font-medium uppercase tracking-[0.18em] ${
+                  infoPopupPlan === "beyond"
+                    ? "text-violet-300"
+                    : "text-cyan-300"
+                }`}
+              >
+                {infoPopupPlan === "beyond"
+                  ? "QUEUERIOUS BEYOND"
+                  : "QUEUERIOUS MIND"}
+              </p>
+
+              <h3 className="mt-2 text-2xl font-semibold">
+                {infoPopup === "priority"
+                  ? "Priority Queue"
+                  : infoPopup === "history"
+                  ? "Queuemitment History"
+                  : "Automatic free token collection"}
+              </h3>
+
+              <p className="mt-4 text-sm leading-7 text-white/50">
+                {infoPopup === "priority"
+                  ? "Skip ahead of standard queue members and get matched sooner when spaces become available."
+                  : infoPopup === "history"
+                  ? "Keep the latest 10 Queuemitments where you connected in chat but didn't end up matching. Read the conversations anytime and take note of what worked and what didn't."
+                  : "Your free Queue Token is collected automatically as soon as its cooldown expires. You don't need to open the app or claim it manually — Queuerious takes care of it for you."}
+              </p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setInfoPopup(null);
+                  setInfoPopupPlan(null);
+                }}
+                className={`mt-7 w-full rounded-2xl px-5 py-3.5 text-sm font-medium text-[#071014] transition ${
+                  infoPopupPlan === "beyond"
+                    ? "bg-violet-500 hover:bg-violet-400"
+                    : "bg-cyan-400 hover:bg-cyan-300"
+                }`}
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        )}
         <div className="mx-auto max-w-7xl">
           {/* HEADER */}
           <div className="mb-12 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
@@ -285,16 +399,35 @@ if (!response.ok) {
               </p>
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-6 lg:grid-cols-2 ">
               {/* BEYOND */}
-              <button
-                type="button"
-                onClick={() => setSelectedProduct("Queuerious Beyond")}
-                className="group relative overflow-hidden rounded-[32px] border border-violet-400/20 bg-gradient-to-br from-violet-500/[0.18] via-[#171321] to-[#101015] p-8 text-left transition hover:-translate-y-1 hover:border-violet-400/40 hover:shadow-2xl hover:shadow-violet-950/30"
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  if (activeSubscription !== "beyond") {
+                    setSelectedProduct("Queuerious Beyond");
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    setSelectedProduct("Queuerious Beyond");
+                  }
+                }}
+                className={`group relative overflow-visible rounded-[32px] border border-violet-400/20 bg-gradient-to-br from-violet-500/[0.18] via-[#171321] to-[#101015] p-8 text-left transition ${
+                  activeSubscription === "beyond"
+                    ? "cursor-default"
+                    : "cursor-pointer hover:-translate-y-1 hover:border-violet-400/40 hover:shadow-2xl hover:shadow-violet-950/30"
+                }`}
               >
+                {activeSubscription === "beyond" && (
+                  <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-violet-300/30 bg-[#211638] px-7 py-2.5 text-xs font-semibold uppercase tracking-[0.14em] text-violet-200 shadow-lg shadow-violet-950/40">
+                    Membership Active
+                  </div>
+                )}
                 <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-violet-500/20 blur-[100px] transition group-hover:bg-violet-500/30" />
 
-                <div className="relative">
+                <div className="relative flex h-full flex-col">
                   <div className="mb-8 flex items-start justify-between">
                     <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/15">
                       <Sparkles size={25} className="text-violet-200" />
@@ -311,11 +444,47 @@ if (!response.ok) {
 
                   <h3 className="mt-1 text-3xl font-semibold">Beyond</h3>
 
-                  <p className="mt-4 max-w-md text-sm leading-relaxed text-white/50">
-                    Go beyond the ordinary.
-                  </p>
+                  <div className="mt-7 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <Ban size={17} className="text-violet-300" />
+                      <span className="text-sm text-white/75">No ads</span>
+                    </div>
 
-                  <div className="mt-8 flex items-end justify-between">
+                    <div className="flex items-center gap-3">
+                      <Ticket size={17} className="text-violet-300" />
+                      <span className="text-sm text-white/75">
+                        5 Queue Tokens
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <Clock3 size={17} className="text-violet-300" />
+                      <span className="text-sm text-white/75">
+                        6h free token cooldown
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Zap size={17} className="text-violet-300" />
+                      <span className="text-sm text-white/75">
+                        Automatic free token collection
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setInfoPopupPlan("beyond");
+                          setInfoPopup("auto-token");
+                        }}
+                        className="ml-1 text-white/25 transition hover:text-violet-300"
+                        aria-label="Learn more about Automatic free token collection"
+                      >
+                        <CircleHelp size={15} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-auto flex items-end justify-between pt-8">
                     <div>
                       <span className="text-3xl font-semibold">70 lei</span>
 
@@ -324,22 +493,45 @@ if (!response.ok) {
                       </span>
                     </div>
 
-                    <div className="rounded-2xl bg-violet-500 px-5 py-3 text-sm font-medium transition group-hover:bg-violet-400">
-                      Explore Beyond
-                    </div>
+                    {activeSubscription !== "beyond" && (
+                      <div className="rounded-2xl bg-violet-500 px-5 py-3 text-sm font-medium text-white transition group-hover:bg-violet-400">
+                        Explore Beyond
+                      </div>
+                    )}
                   </div>
                 </div>
-              </button>
+              </div>
 
               {/* MIND */}
-              <button
-                type="button"
-                onClick={() => setSelectedProduct("Queuerious Mind")}
-                className="group relative overflow-hidden rounded-[32px] border border-cyan-400/20 bg-gradient-to-br from-cyan-500/[0.13] via-[#101a20] to-[#101015] p-8 text-left transition hover:-translate-y-1 hover:border-cyan-300/40 hover:shadow-2xl hover:shadow-cyan-950/30"
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  if (activeSubscription !== "mind") {
+                    setSelectedProduct("Queuerious Mind");
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    if (activeSubscription !== "mind") {
+                      setSelectedProduct("Queuerious Mind");
+                    }
+                  }
+                }}
+                className={`group relative overflow-visible rounded-[32px] border border-cyan-400/20 bg-gradient-to-br from-cyan-500/[0.13] via-[#101a20] to-[#101015] p-8 text-left transition ${
+                  activeSubscription === "mind"
+                    ? "cursor-default"
+                    : "cursor-pointer hover:-translate-y-1 hover:border-cyan-300/40 hover:shadow-2xl hover:shadow-cyan-950/30"
+                }`}
               >
+                {activeSubscription === "mind" && (
+                  <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-300/30 bg-[#10242a] px-7 py-2.5 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-200 shadow-lg shadow-cyan-950/40">
+                    Membership Active
+                  </div>
+                )}
                 <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-cyan-400/15 blur-[100px] transition group-hover:bg-cyan-400/25" />
 
-                <div className="relative">
+                <div className="relative flex h-full flex-col">
                   <div className="mb-8 flex items-start justify-between">
                     <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10">
                       <Brain size={25} className="text-cyan-200" />
@@ -356,11 +548,85 @@ if (!response.ok) {
 
                   <h3 className="mt-1 text-3xl font-semibold">Mind</h3>
 
-                  <p className="mt-4 max-w-md text-sm leading-relaxed text-white/50">
-                    For those who connect differently.
-                  </p>
+                  <div className="mt-7 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <Ban size={17} className="text-cyan-300" />
+                      <span className="text-sm text-white/75">No ads</span>
+                    </div>
 
-                  <div className="mt-8 flex items-end justify-between">
+                    <div className="flex items-center gap-3">
+                      <Ticket size={17} className="text-cyan-300" />
+                      <span className="text-sm text-white/75">
+                        10 Queue Tokens
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <Clock3 size={17} className="text-cyan-300" />
+                      <span className="text-sm text-white/75">
+                        6h free token cooldown
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Zap size={17} className="text-cyan-300" />
+                      <span className="text-sm text-white/75">
+                        Automatic free token collection
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setInfoPopupPlan("mind");
+                          setInfoPopup("auto-token");
+                        }}
+                        className="ml-1 text-white/25 transition hover:text-cyan-300"
+                        aria-label="Learn more about Automatic free token collection"
+                      >
+                        <CircleHelp size={15} />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <Zap size={17} className="text-cyan-300" />
+                      <span className="text-sm text-white/75">
+                        Priority Queue
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setInfoPopup("priority");
+                        }}
+                        className="ml-1 text-white/25 transition hover:text-cyan-300"
+                        aria-label="Learn more about Priority Queue"
+                      >
+                        <CircleHelp size={15} />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <MessageSquare size={17} className="text-cyan-300" />
+                      <span className="text-sm text-white/75">
+                        Queuemitment History
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setInfoPopup("history");
+                        }}
+                        className="ml-1 text-white/25 transition hover:text-cyan-300"
+                        aria-label="Learn more about Queuemitment History"
+                      >
+                        <CircleHelp size={15} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-auto flex items-end justify-between pt-8">
                     <div>
                       <span className="text-3xl font-semibold">100 lei</span>
 
@@ -369,12 +635,14 @@ if (!response.ok) {
                       </span>
                     </div>
 
-                    <div className="rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-medium text-[#071014] transition group-hover:bg-cyan-300">
-                      Explore Mind
-                    </div>
+                    {activeSubscription !== "mind" && (
+                      <div className="rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-medium text-[#071014] transition group-hover:bg-cyan-300">
+                        Explore Mind
+                      </div>
+                    )}
                   </div>
                 </div>
-              </button>
+              </div>
             </div>
           </div>
 
@@ -425,6 +693,26 @@ if (!response.ok) {
                   Your membership will renew automatically every month.
                 </p>
 
+                {((selectedProduct === "Queuerious Beyond" &&
+                  activeSubscription === "mind") ||
+                  (selectedProduct === "Queuerious Mind" &&
+                    activeSubscription === "beyond")) && (
+                  <div className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/[0.06] p-4">
+                    <p className="text-sm font-semibold text-amber-200">
+                      You already have an active membership
+                    </p>
+
+                    <p className="mt-1 text-xs leading-5 text-amber-100/55">
+                      Activating {selectedProduct} will immediately replace your
+                      current{" "}
+                      {activeSubscription === "beyond"
+                        ? "Queuerious Beyond"
+                        : "Queuerious Mind"}{" "}
+                      membership.
+                    </p>
+                  </div>
+                )}
+
                 <div className="mt-8 flex gap-3">
                   <button
                     type="button"
@@ -445,7 +733,11 @@ if (!response.ok) {
                           : "mind"
                       )
                     }
-                    className="flex-1 rounded-2xl bg-violet-500 px-5 py-3.5 text-sm font-medium transition hover:bg-violet-400 disabled:opacity-60"
+                    className={`flex-1 rounded-2xl px-5 py-3.5 text-sm font-medium transition disabled:opacity-60 ${
+                      selectedProduct === "Queuerious Mind"
+                        ? "bg-cyan-400 text-[#071014] hover:bg-cyan-300"
+                        : "bg-violet-500 text-white hover:bg-violet-400"
+                    }`}
                   >
                     {subscriptionLoading ? "Activating..." : "Activate"}
                   </button>

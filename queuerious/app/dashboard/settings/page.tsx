@@ -300,7 +300,7 @@ export default function SettingsPage() {
                               month: "long",
                               year: "numeric",
                             })}`
-                          : `Next billing: ${new Date(
+                          : `Next billing ${new Date(
                               subscription.expires_at!
                             ).toLocaleDateString("en-GB", {
                               day: "numeric",

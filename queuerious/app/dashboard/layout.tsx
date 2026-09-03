@@ -6,6 +6,8 @@ import QueueTokens from "./QueueTokens";
 
 import {
   Bell,
+  Brain,
+  Sparkles,
   CircleUserRound,
   Flame,
   Home,
@@ -52,14 +54,30 @@ export default async function DashboardLayout({
   let freeTokenClaimedAt: string | null = null;
 
   const { data: tokenData } = await supabase
-  .from("queue_tokens")
-  .select("tokens, free_token_claimed_at")
-  .eq("user_id", userId)
-  .single();
+    .from("queue_tokens")
+    .select("tokens, free_token_claimed_at")
+    .eq("user_id", userId)
+    .single();
 
-queueTokens = tokenData?.tokens ?? 0;
-freeTokenClaimedAt =
-  tokenData?.free_token_claimed_at ?? null;
+  queueTokens = tokenData?.tokens ?? 0;
+  freeTokenClaimedAt = tokenData?.free_token_claimed_at ?? null;
+
+  let activeSubscription: "beyond" | "mind" | null = null;
+
+  const { data: subscriptionData } = await supabase
+    .from("subscriptions")
+    .select("plan")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .gt("expires_at", new Date().toISOString())
+    .maybeSingle();
+
+  if (
+    subscriptionData?.plan === "beyond" ||
+    subscriptionData?.plan === "mind"
+  ) {
+    activeSubscription = subscriptionData.plan;
+  }
 
   return (
     <main className="min-h-screen bg-[#f7f7fb] text-gray-900 dark:bg-[#09090d] dark:text-white">
@@ -85,6 +103,47 @@ freeTokenClaimedAt =
             </div>
 
             <div className="ml-auto flex items-center gap-3">
+              {activeSubscription && (
+                <div
+                  className={`flex items-center gap-3 rounded-3xl border px-5 py-2.5 ${
+                    activeSubscription === "beyond"
+                      ? "border-violet-400/15 bg-violet-500/[0.07]"
+                      : "border-cyan-400/15 bg-cyan-400/[0.07]"
+                  }`}
+                >
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+                      activeSubscription === "beyond"
+                        ? "bg-violet-500/15"
+                        : "bg-cyan-400/15"
+                    }`}
+                  >
+                    {activeSubscription === "beyond" ? (
+                      <Sparkles size={19} className="text-violet-300" />
+                    ) : (
+                      <Brain size={19} className="text-cyan-300" />
+                    )}
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold">
+                      {activeSubscription === "beyond"
+                        ? "Queuerious Beyond"
+                        : "Queuerious Mind"}
+                    </p>
+
+                    <p
+                      className={`text-xs ${
+                        activeSubscription === "beyond"
+                          ? "text-violet-300/50"
+                          : "text-cyan-300/50"
+                      }`}
+                    >
+                      Active membership
+                    </p>
+                  </div>
+                </div>
+              )}
               <QueueTokens
                 initialTokens={queueTokens}
                 initialFreeTokenClaimedAt={

@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/supabase/stripe/stripe";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 const PRODUCTS = {
   queuetie: {
@@ -53,7 +59,47 @@ export async function POST(request: NextRequest) {
 
     const product = PRODUCTS[productKey];
 
+    let replacesSubscriptionId: string | null = null;
+    let currentSubscription: {
+      plan: string;
+      stripe_subscription_id: string | null;
+    } | null = null;
+
+    if (product.type === "subscription") {
+      const { data } = await supabaseAdmin
+        .from("subscriptions")
+        .select("plan, stripe_subscription_id")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+
+      currentSubscription = data;
+
+      if (currentSubscription && currentSubscription.plan === productKey) {
+        return NextResponse.json(
+          { error: "You already have this membership active." },
+          { status: 400 }
+        );
+      }
+
+      if (
+        currentSubscription &&
+        currentSubscription.plan !== productKey &&
+        currentSubscription.stripe_subscription_id
+      ) {
+        replacesSubscriptionId = currentSubscription.stripe_subscription_id;
+      }
+    }
+
     const origin = request.headers.get("origin") || new URL(request.url).origin;
+
+    console.log("CHECKOUT REPLACEMENT:", {
+      userId,
+      productKey,
+      currentSubscription,
+      replacesSubscriptionId,
+    });
 
     const session = await stripe.checkout.sessions.create({
       mode: product.type === "subscription" ? "subscription" : "payment",
@@ -72,6 +118,7 @@ export async function POST(request: NextRequest) {
         userId,
         product: productKey,
         tokens: product.type === "tokens" ? String(product.tokens) : "0",
+        replacesSubscriptionId: replacesSubscriptionId ?? "",
       },
     });
 

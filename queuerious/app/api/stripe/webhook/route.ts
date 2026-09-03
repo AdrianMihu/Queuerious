@@ -39,10 +39,54 @@ export async function POST(request: NextRequest) {
     const tokens = Number(session.metadata?.tokens ?? 0);
     const product = session.metadata?.product;
 
+    if ((product === "beyond" || product === "mind") && !stripeSubscriptionId) {
+      return new NextResponse("Missing Stripe subscription ID", {
+        status: 500,
+      });
+    }
+
+    const replacesSubscriptionId =
+      session.metadata?.replacesSubscriptionId || null;
+
     if (product === "beyond" || product === "mind") {
       const startedAt = new Date();
-      const expiresAt = new Date(startedAt);
-      expiresAt.setMonth(expiresAt.getMonth() + 1);
+
+      const stripeSubscription = await stripe.subscriptions.retrieve(
+        stripeSubscriptionId!
+      );
+
+      const currentPeriodEnd =
+        stripeSubscription.items.data[0]?.current_period_end;
+
+      if (!currentPeriodEnd) {
+        return new NextResponse("Missing subscription period end", {
+          status: 500,
+        });
+      }
+
+      const expiresAt = new Date(currentPeriodEnd * 1000);
+
+      if (replacesSubscriptionId) {
+        try {
+          await stripe.subscriptions.cancel(replacesSubscriptionId);
+          await supabaseAdmin
+            .from("subscriptions")
+            .update({
+              status: "cancelled",
+              cancelled_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("stripe_subscription_id", replacesSubscriptionId);
+
+          console.log("OLD SUBSCRIPTION REPLACED:", replacesSubscriptionId);
+        } catch (error) {
+          console.error("Failed to replace old subscription:", error);
+
+          return new NextResponse("Failed to replace existing membership", {
+            status: 500,
+          });
+        }
+      }
 
       const { error } = await supabaseAdmin.from("subscriptions").upsert(
         {
@@ -96,29 +140,24 @@ export async function POST(request: NextRequest) {
         ? invoice.parent.subscription_details?.subscription
         : null;
 
-        if (stripeSubscriptionId) {
-          const subscriptionId =
-            typeof stripeSubscriptionId === "string"
-              ? stripeSubscriptionId
-              : stripeSubscriptionId.id;
-        
-          const subscription = await stripe.subscriptions.retrieve(
-            subscriptionId
-          );
+    if (stripeSubscriptionId) {
+      const subscriptionId =
+        typeof stripeSubscriptionId === "string"
+          ? stripeSubscriptionId
+          : stripeSubscriptionId.id;
 
-      const currentPeriodEnd =
-  subscription.items.data[0]?.current_period_end;
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
-if (!currentPeriodEnd) {
-  console.error("Missing subscription period end.");
-  return new NextResponse("Missing subscription period end", {
-    status: 500,
-  });
-}
+      const currentPeriodEnd = subscription.items.data[0]?.current_period_end;
 
-const expiresAt = new Date(
-  currentPeriodEnd * 1000
-).toISOString();
+      if (!currentPeriodEnd) {
+        console.error("Missing subscription period end.");
+        return new NextResponse("Missing subscription period end", {
+          status: 500,
+        });
+      }
+
+      const expiresAt = new Date(currentPeriodEnd * 1000).toISOString();
 
       const { error } = await supabaseAdmin
         .from("subscriptions")
