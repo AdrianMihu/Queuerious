@@ -377,21 +377,21 @@ export default function QueuemitmentRevealPage() {
   AUTO PASS WHEN TIMER EXPIRES
 */
 
-useEffect(() => {
-  if (secondsLeft > 0) return;
+  useEffect(() => {
+    if (secondsLeft > 0) return;
 
-  if (myDecision !== "pending") return;
+    if (myDecision !== "pending") return;
 
-  if (submitting) return;
+    if (submitting) return;
 
-  const timeout = setTimeout(() => {
-    void submitDecision("pass");
-  }, 100);
+    const timeout = setTimeout(() => {
+      void submitDecision("pass");
+    }, 100);
 
-  return () => clearTimeout(timeout);
+    return () => clearTimeout(timeout);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [secondsLeft, myDecision, submitting]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [secondsLeft, myDecision, submitting]);
 
   /*
     Loading
@@ -493,17 +493,17 @@ useEffect(() => {
 
   const age = calculateAge(otherProfile.date_of_birth);
 
-  const photo =
+  const photos =
     otherProfile.photo_urls && otherProfile.photo_urls.length > 0
-      ? otherProfile.photo_urls[0]
-      : null;
+      ? otherProfile.photo_urls
+      : [];
 
   /*
     Main reveal screen
   */
 
   return (
-    <div className="min-h-[calc(100vh-80px)] bg-[#09090d] px-6 py-10 lg:px-10">
+    <div className="relative min-h-[calc(100vh-80px)] bg-[#09090d] px-6 py-10 pb-40 lg:px-10">
       <div className="mx-auto max-w-4xl">
         {/* Header */}
 
@@ -530,23 +530,27 @@ useEffect(() => {
         <div className="overflow-hidden rounded-[32px] border border-white/[0.08] bg-[#15151f]">
           {/* Photo */}
 
-          <div className="relative aspect-[16/8] bg-white/[0.03]">
-            {photo ? (
-              <Image
-                src={photo}
-                alt={otherProfile.first_name || "Profile"}
-                fill
-                className="object-cover"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center">
-                <div className="flex h-28 w-28 items-center justify-center rounded-full bg-violet-500/10 text-4xl font-semibold text-violet-300">
-                  {otherProfile.first_name?.charAt(0).toUpperCase() || "?"}
+          <div className="grid gap-4 sm:grid-cols-2">
+            {photos.map((photo, index) => (
+              <div
+                key={`${photo}-${index}`}
+                className="group relative aspect-[4/5] overflow-hidden rounded-[24px] border border-white/[0.08]"
+              >
+                <img
+                  src={photo}
+                  alt={`${otherProfile.first_name || "Profile"} photo ${
+                    index + 1
+                  }`}
+                  className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                />
+
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
+
+                <div className="absolute bottom-4 left-4 rounded-full bg-black/40 px-3 py-1.5 text-xs text-white/70 opacity-0 backdrop-blur-md transition group-hover:opacity-100">
+                  Photo {index + 1}
                 </div>
               </div>
-            )}
-
-            <div className="absolute inset-0 bg-gradient-to-t from-[#15151f] via-transparent to-transparent" />
+            ))}
           </div>
 
           {/* Profile content */}
@@ -615,56 +619,55 @@ useEffect(() => {
 
             {/* Decision area */}
 
-            <div className="mt-10 border-t border-white/[0.07] pt-8">
+            <div className="fixed bottom-5 left-1/2 z-40 w-[min(620px,calc(100%-32px))] -translate-x-1/2 rounded-[24px] border border-violet-400/15 bg-[#12121b]/95 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-2xl lg:left-[calc(50%+130px)]">
               {myDecision === "pending" ? (
                 <>
-                  <div className="text-center">
-                    <div className="mx-auto flex w-fit items-center gap-3 rounded-full border border-violet-400/20 bg-violet-500/[0.08] px-5 py-2.5">
+                <div className="flex items-center gap-5">
+                  {/* TIMER */}
+                  <div className="flex shrink-0 items-center gap-3 px-2">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/[0.08]">
                       <Clock size={17} className="text-violet-300" />
-
-                      <span className="text-sm font-medium text-violet-200">
-                        {secondsLeft}s to decide
-                      </span>
                     </div>
-
-                    <p className="mt-6 text-lg font-medium">
-                      What do you think?
-                    </p>
-
-                    <p className="mt-2 text-sm text-white/40">
-                      Your decision will be locked once you choose. If time runs
-                      out, it&apos;s a pass.
-                    </p>
+              
+                    <div>
+                      <div className="text-base font-semibold text-violet-200">
+                        {secondsLeft}s
+                      </div>
+                      <div className="text-[11px] text-white/35">
+                        to decide
+                      </div>
+                    </div>
                   </div>
-
-                  <div className="mt-7 grid grid-cols-2 gap-4">
-                    {/* PASS */}
-
+              
+                  {/* DIVIDER */}
+                  <div className="h-12 w-px bg-white/[0.08]" />
+              
+                  {/* ACTIONS */}
+                  <div className="grid flex-1 grid-cols-2 gap-3">
                     <button
                       onClick={() => submitDecision("pass")}
                       disabled={submitting}
-                      className="flex items-center justify-center gap-2 rounded-2xl border border-white/[0.1] bg-white/[0.03] px-5 py-4 font-medium text-white/60 transition hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-300 disabled:opacity-50"
+                      className="flex h-12 items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] text-sm font-medium text-white/55 transition hover:border-red-400/25 hover:bg-red-500/10 hover:text-red-300 disabled:opacity-50"
                     >
-                      <X size={20} />
+                      <X size={17} />
                       Pass
                     </button>
-
-                    {/* MATCH */}
-
+              
                     <button
                       onClick={() => submitDecision("match")}
                       disabled={submitting}
-                      className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 px-5 py-4 font-medium transition hover:scale-[1.01] hover:shadow-lg hover:shadow-violet-500/20 disabled:opacity-50"
+                      className="flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-sm font-medium transition hover:shadow-lg hover:shadow-violet-500/20 disabled:opacity-50"
                     >
                       {submitting ? (
-                        <Loader2 size={20} className="animate-spin" />
+                        <Loader2 size={17} className="animate-spin" />
                       ) : (
-                        <Heart size={20} className="fill-white" />
+                        <Heart size={17} className="fill-white" />
                       )}
                       Match
                     </button>
                   </div>
-                </>
+                </div>
+              </>
               ) : (
                 <div className="rounded-2xl border border-violet-400/15 bg-violet-500/[0.06] p-6 text-center">
                   <Clock size={24} className="mx-auto text-violet-300" />

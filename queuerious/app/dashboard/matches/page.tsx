@@ -26,6 +26,7 @@ type Match = {
   user_one_id: string;
   user_two_id: string;
   created_at: string;
+  connection_type: "Relationship" | "Friends" | null;
 };
 
 type ConversationMessage = {
@@ -77,8 +78,16 @@ function formatTime(date: string) {
   return messageDate.toLocaleDateString();
 }
 
-export default async function MatchesPage() {
+export default async function MatchesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string }>;
+}) {
   const supabase = await createClient();
+  const { type } = await searchParams;
+
+  const selectedType =
+    type === "relationship" || type === "friends" ? type : null;
 
   const {
     data: { user },
@@ -113,6 +122,25 @@ export default async function MatchesPage() {
   }
 
   const matches = (matchesData || []) as Match[];
+
+  const { data: conversationsData, error: conversationsError } = await supabase
+    .from("queuemitment_conversations")
+    .select("id, connection_type")
+    .in(
+      "id",
+      matches.map((match) => match.conversation_id)
+    );
+
+  if (conversationsError) {
+    console.error("Error loading conversation types:", conversationsError);
+  }
+
+  const connectionTypeByConversation = new Map(
+    (conversationsData || []).map((conversation) => [
+      conversation.id,
+      conversation.connection_type,
+    ])
+  );
 
   console.log("========== MATCH / PROFILE DEBUG ==========");
 
@@ -266,6 +294,8 @@ export default async function MatchesPage() {
           : formatTime(match.created_at),
 
         createdAt: match.created_at,
+        connectionType:
+          connectionTypeByConversation.get(match.conversation_id) ?? null,
       };
     })
 
@@ -277,24 +307,27 @@ export default async function MatchesPage() {
       <section className="flex-1 px-6 py-10 lg:px-10 xl:px-16">
         <div className="mx-auto max-w-6xl">
           {/* HEADER */}
+          {!selectedType && (
+            <div className="mb-10">
+              <div className="mb-4 flex items-center gap-2 text-sm text-rose-300">
+                <Heart size={16} className="fill-rose-300" />
 
-          <div className="mb-10">
-            <div className="mb-4 flex items-center gap-2 text-sm text-rose-300">
-              <Heart size={16} className="fill-rose-300" />
+                <span>Your connections</span>
+              </div>
 
-              <span>Your connections</span>
+              <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+                Your Matches
+              </h1>
+
+              <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/45 sm:text-lg">
+                Conversations that became something more.
+              </p>
             </div>
-
-            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-              Your Matches
-            </h1>
-
-            <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/45 sm:text-lg">
-              Conversations that became something more.
-            </p>
-          </div>
+          )}
 
           {/* HERO */}
+
+          {!selectedType && (
 
           <div className="relative overflow-hidden rounded-[32px] border border-rose-400/15 bg-gradient-to-br from-rose-500/[0.14] via-[#171116] to-[#111116] p-7 shadow-2xl shadow-rose-950/10 sm:p-10">
             <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-rose-500/20 blur-[110px]" />
@@ -338,163 +371,531 @@ export default async function MatchesPage() {
               </div>
             </div>
           </div>
+          )}
 
           {/* CONVERSATIONS */}
 
-          <div className="mt-12">
-            <div className="mb-6 flex items-end justify-between gap-4">
-              <div>
-                <p className="mb-2 flex items-center gap-2 text-sm text-violet-300">
-                  <MessageCircle size={16} />
-                  Keep discovering
-                </p>
+          {!selectedType && (
+            <div className="mt-12">
+              <div className="mb-6 flex items-end justify-between gap-4">
+                <div>
+                  <p className="mb-2 flex items-center gap-2 text-sm text-violet-300">
+                    <MessageCircle size={16} />
+                    Keep discovering
+                  </p>
 
-                <h2 className="text-2xl font-semibold tracking-tight">
-                  Your conversations
-                </h2>
-              </div>
-
-              <p className="hidden text-sm text-white/30 sm:block">
-                {displayMatches.length} active{" "}
-                {displayMatches.length === 1 ? "connection" : "connections"}
-              </p>
-            </div>
-
-            {/* EMPTY STATE */}
-
-            {displayMatches.length === 0 && (
-              <div className="rounded-[28px] border border-white/[0.07] bg-white/[0.025] p-10 text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-300">
-                  <Heart size={28} />
+                  <h2 className="text-2xl font-semibold tracking-tight">
+                    Your conversations
+                  </h2>
                 </div>
 
-                <h3 className="mt-5 text-xl font-semibold">No matches yet</h3>
-
-                <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-white/40">
-                  Your next Queuemitment conversation could become something
-                  more.
+                <p className="hidden text-sm text-white/30 sm:block">
+                  {displayMatches.length} active{" "}
+                  {displayMatches.length === 1 ? "connection" : "connections"}
                 </p>
-
-                <Link
-                  href="/dashboard/queuemitment"
-                  className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-violet-500 px-5 py-3 text-sm font-medium transition hover:bg-violet-400"
-                >
-                  <Zap size={17} />
-                  Enter Queuemitment
-                </Link>
               </div>
-            )}
 
-            {/* CHAT LIST */}
+              {/* EMPTY STATE */}
 
-            <div className="space-y-3">
-              {displayMatches.map((match) => (
-                <Link
-                  key={match.id}
-                  href={`/dashboard/matches/${match.id}/chat`}
-                  className="group relative flex items-center gap-4 overflow-hidden rounded-3xl border border-white/[0.07] bg-white/[0.025] p-4 transition hover:border-rose-400/20 hover:bg-white/[0.045]"
-                >
-                  {/* AVATAR */}
+              {displayMatches.length === 0 && (
+                <div className="rounded-[28px] border border-white/[0.07] bg-white/[0.025] p-10 text-center">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-300">
+                    <Heart size={28} />
+                  </div>
 
-                  <div className="relative shrink-0">
-                    <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-white/[0.08] bg-violet-500/10">
-                      {match.image ? (
-                        <img
-                          src={match.image}
-                          alt={match.name}
-                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                        />
-                      ) : (
-                        <span className="text-lg font-semibold text-violet-300">
-                          {match.name.charAt(0).toUpperCase()}
-                        </span>
-                      )}
+                  <h3 className="mt-5 text-xl font-semibold">No matches yet</h3>
+
+                  <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-white/40">
+                    Your next Queuemitment conversation could become something
+                    more.
+                  </p>
+
+                  <Link
+                    href="/dashboard/queuemitment"
+                    className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-violet-500 px-5 py-3 text-sm font-medium transition hover:bg-violet-400"
+                  >
+                    <Zap size={17} />
+                    Enter Queuemitment
+                  </Link>
+                </div>
+              )}
+
+              {/* CHAT LIST */}
+
+              {!selectedType && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Link
+                    href="/dashboard/matches?type=relationship"
+                    className="group relative overflow-hidden rounded-[28px] border border-rose-400/15 bg-gradient-to-br from-rose-500/[0.12] via-white/[0.025] to-transparent p-7 transition hover:border-rose-400/30 hover:bg-rose-500/[0.08]"
+                  >
+                    <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-rose-400/20 bg-rose-500/10">
+                      <Heart size={26} className="text-rose-300" />
                     </div>
 
-                    <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-4 border-[#0d0d12] bg-emerald-400">
-                      <div className="h-1.5 w-1.5 rounded-full bg-white/70" />
+                    <h3 className="text-2xl font-semibold">Relationship</h3>
+
+                    <p className="mt-2 text-sm text-white/40">
+                      Your romantic connections
+                    </p>
+
+                    <div className="mt-6 flex items-center gap-2 text-sm text-rose-300">
+                      View conversations
+                      <ChevronRight
+                        size={17}
+                        className="transition group-hover:translate-x-1"
+                      />
+                    </div>
+                  </Link>
+
+                  <Link
+                    href="/dashboard/matches?type=friends"
+                    className="group relative overflow-hidden rounded-[28px] border border-violet-400/15 bg-gradient-to-br from-violet-500/[0.12] via-white/[0.025] to-transparent p-7 transition hover:border-violet-400/30 hover:bg-violet-500/[0.08]"
+                  >
+                    <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-400/20 bg-violet-500/10">
+                      <Users size={26} className="text-violet-300" />
+                    </div>
+
+                    <h3 className="text-2xl font-semibold">Friends</h3>
+
+                    <p className="mt-2 text-sm text-white/40">
+                      Your friendly connections
+                    </p>
+
+                    <div className="mt-6 flex items-center gap-2 text-sm text-violet-300">
+                      View conversations
+                      <ChevronRight
+                        size={17}
+                        className="transition group-hover:translate-x-1"
+                      />
+                    </div>
+                  </Link>
+                </div>
+              )}
+
+              {selectedType && (
+                <div className="mt-12">
+                  {/* HEADER */}
+                  <div
+                    className={`relative mb-10 overflow-hidden rounded-3xl border p-6 lg:p-7 ${
+                      selectedType === "relationship"
+                        ? "border-rose-400/10 bg-gradient-to-br from-rose-400/[0.06] via-white/[0.02] to-transparent"
+                        : "border-violet-400/10 bg-gradient-to-br from-violet-400/[0.06] via-white/[0.02] to-transparent"
+                    }`}
+                  >
+                    <div
+                      className={`pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full blur-3xl ${
+                        selectedType === "relationship"
+                          ? "bg-rose-400/[0.06]"
+                          : "bg-violet-400/[0.06]"
+                      }`}
+                    />
+
+                    <div className="relative flex items-center justify-between gap-6">
+                      <div className="flex min-w-0 items-center gap-4">
+                        <div
+                          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border ${
+                            selectedType === "relationship"
+                              ? "border-rose-400/20 bg-rose-400/10"
+                              : "border-violet-400/20 bg-violet-400/10"
+                          }`}
+                        >
+                          {selectedType === "relationship" ? (
+                            <Heart className="h-6 w-6 text-rose-400" />
+                          ) : (
+                            <Users className="h-6 w-6 text-violet-400" />
+                          )}
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2.5">
+                            <h1 className="text-2xl font-bold tracking-tight text-white lg:text-3xl">
+                              {selectedType === "relationship"
+                                ? "Relationship Matches"
+                                : "Friends Matches"}
+                            </h1>
+
+                            <span
+                              className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${
+                                selectedType === "relationship"
+                                  ? "border-rose-400/20 bg-rose-400/10 text-rose-400"
+                                  : "border-violet-400/20 bg-violet-400/10 text-violet-400"
+                              }`}
+                            >
+                              {selectedType === "relationship"
+                                ? "Relationship"
+                                : "Friends"}
+                            </span>
+                          </div>
+
+                          <p className="mt-1.5 text-sm text-white/40">
+                            {selectedType === "relationship"
+                              ? "Conversations that became a romantic connection"
+                              : "Conversations that became a friendship"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="hidden shrink-0 text-right sm:block">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/25">
+                          Connections
+                        </p>
+
+                        <p className="mt-1 text-sm font-medium text-white/50">
+                          {
+                            displayMatches.filter(
+                              (match) =>
+                                match.connectionType ===
+                                (selectedType === "relationship"
+                                  ? "Relationship"
+                                  : "Friends")
+                            ).length
+                          }
+                        </p>
+                      </div>
                     </div>
                   </div>
 
-                  {/* CONTENT */}
+                  {/* BACK */}
+                  <Link
+                    href="/dashboard/matches"
+                    className="mb-5 inline-flex items-center gap-2 text-sm text-white/35 transition hover:text-white"
+                  >
+                    <ChevronRight size={16} className="rotate-180" />
+                    Back to connections
+                  </Link>
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <h3 className="truncate font-semibold">{match.name}</h3>
+                  {/* MATCHES */}
+                  <div className="grid gap-4">
+                    {displayMatches
+                      .filter(
+                        (match) =>
+                          match.connectionType ===
+                          (selectedType === "relationship"
+                            ? "Relationship"
+                            : "Friends")
+                      )
+                      .map((match) => (
+                        <Link
+                          key={match.id}
+                          href={`/dashboard/matches/${match.id}/chat`}
+                          className={`group relative block overflow-hidden rounded-3xl border bg-white/[0.02] p-5 transition-all duration-300 hover:-translate-y-[1px] ${
+                            selectedType === "relationship"
+                              ? "border-white/[0.07] hover:border-rose-400/20 hover:bg-rose-400/[0.025] hover:shadow-[0_0_40px_rgba(251,113,133,0.05)]"
+                              : "border-white/[0.07] hover:border-violet-400/20 hover:bg-violet-400/[0.025] hover:shadow-[0_0_40px_rgba(167,139,250,0.05)]"
+                          }`}
+                        >
+                          <div
+                            className={`pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full blur-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${
+                              selectedType === "relationship"
+                                ? "bg-rose-400/[0.04]"
+                                : "bg-violet-400/[0.04]"
+                            }`}
+                          />
 
-                        {match.age !== null && (
-                          <span className="text-sm text-white/35">
-                            {match.age}
-                          </span>
-                        )}
+                          <div className="relative flex items-center justify-between gap-5">
+                            <div className="flex min-w-0 items-center gap-4">
+                              {/* AVATAR */}
+                              <div
+                                className={`relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border bg-gradient-to-br ${
+                                  selectedType === "relationship"
+                                    ? "border-rose-400/15 from-rose-400/10 to-white/[0.03]"
+                                    : "border-violet-400/15 from-violet-400/10 to-white/[0.03]"
+                                }`}
+                              >
+                                {match.image ? (
+                                  <img
+                                    src={match.image}
+                                    alt={match.name}
+                                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                                  />
+                                ) : (
+                                  <span
+                                    className={`text-lg font-semibold ${
+                                      selectedType === "relationship"
+                                        ? "text-rose-400/80"
+                                        : "text-violet-400/80"
+                                    }`}
+                                  >
+                                    {match.name.charAt(0).toUpperCase()}
+                                  </span>
+                                )}
 
-                        <Heart
-                          size={13}
-                          className="shrink-0 fill-rose-400 text-rose-400"
+                                <div
+                                  className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-[#0d0d12] ${
+                                    selectedType === "relationship"
+                                      ? "bg-rose-400/70"
+                                      : "bg-violet-400/70"
+                                  }`}
+                                />
+                              </div>
+
+                              {/* INFO */}
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h2 className="font-semibold tracking-tight text-white">
+                                    {match.name}
+                                  </h2>
+
+                                  {match.age !== null && (
+                                    <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-white/40">
+                                      {match.age}
+                                    </span>
+                                  )}
+
+                                  <span
+                                    className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${
+                                      selectedType === "relationship"
+                                        ? "border-rose-400/15 bg-rose-400/[0.05] text-rose-300/75"
+                                        : "border-violet-400/15 bg-violet-400/[0.05] text-violet-300/75"
+                                    }`}
+                                  >
+                                    {selectedType === "relationship"
+                                      ? "Relationship"
+                                      : "Friends"}
+                                  </span>
+                                </div>
+
+                                <div className="mt-1.5 flex items-center gap-2 text-xs text-white/30">
+                                  <MapPin size={13} />
+                                  {match.location}
+                                </div>
+
+                                <p className="mt-2 truncate text-sm text-white/35 transition-colors group-hover:text-white/45">
+                                  {match.lastMessage}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* METADATA */}
+                            <div className="hidden shrink-0 text-right sm:block">
+                              <p className="text-xs text-white/30">
+                                {match.lastMessageTime}
+                              </p>
+
+                              <p className="mt-1 text-[11px] text-white/20">
+                                Conversation
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* MOBILE METADATA */}
+                          <div className="relative mt-4 flex items-center gap-3 border-t border-white/[0.05] pt-3 sm:hidden">
+                            <span className="text-[11px] text-white/25">
+                              {match.lastMessageTime}
+                            </span>
+
+                            <span className="h-1 w-1 rounded-full bg-white/15" />
+
+                            <span className="text-[11px] text-white/20">
+                              Conversation
+                            </span>
+                          </div>
+                        </Link>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {selectedType && (
+            <div className="mt-12">
+              {/* HEADER */}
+              <div className="mb-8">
+                <Link
+                  href="/dashboard/matches"
+                  className="mb-6 inline-flex items-center gap-2 text-sm text-white/40 transition hover:text-white"
+                >
+                  <ChevronRight size={16} className="rotate-180" />
+                  Back to connections
+                </Link>
+
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`flex h-14 w-14 items-center justify-center rounded-2xl border ${
+                      selectedType === "relationship"
+                        ? "border-rose-400/20 bg-rose-500/10"
+                        : "border-violet-400/20 bg-violet-500/10"
+                    }`}
+                  >
+                    {selectedType === "relationship" ? (
+                      <Heart size={26} className="text-rose-300" />
+                    ) : (
+                      <Users size={26} className="text-violet-300" />
+                    )}
+                  </div>
+
+                  <div>
+                    <h2 className="text-3xl font-semibold tracking-tight">
+                      {selectedType === "relationship"
+                        ? "Relationship Matches"
+                        : "Friends Matches"}
+                    </h2>
+
+                    <p className="mt-1 text-sm text-white/40">
+                      {selectedType === "relationship"
+                        ? "Conversations that became a romantic connection"
+                        : "Conversations that became a friendship"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* MATCH LIST */}
+              <div className="space-y-3">
+                {displayMatches
+                  .filter(
+                    (match) =>
+                      match.connectionType ===
+                      (selectedType === "relationship"
+                        ? "Relationship"
+                        : "Friends")
+                  )
+                  .map((match) => (
+                    <Link
+                      key={match.id}
+                      href={`/dashboard/matches/${match.id}/chat`}
+                      className={`group relative flex items-center gap-5 overflow-hidden rounded-[28px] border bg-white/[0.02] p-5 transition ${
+                        selectedType === "relationship"
+                          ? "border-rose-400/10 hover:border-rose-400/25 hover:bg-rose-500/[0.035]"
+                          : "border-violet-400/10 hover:border-violet-400/25 hover:bg-violet-500/[0.035]"
+                      }`}
+                    >
+                      {/* AVATAR */}
+                      <div className="relative shrink-0">
+                        <div
+                          className={`flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border ${
+                            selectedType === "relationship"
+                              ? "border-rose-400/15 bg-rose-500/10"
+                              : "border-violet-400/15 bg-violet-500/10"
+                          }`}
+                        >
+                          {match.image ? (
+                            <img
+                              src={match.image}
+                              alt={match.name}
+                              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                            />
+                          ) : (
+                            <span
+                              className={`text-lg font-semibold ${
+                                selectedType === "relationship"
+                                  ? "text-rose-300"
+                                  : "text-violet-300"
+                              }`}
+                            >
+                              {match.name.charAt(0).toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+
+                        <div
+                          className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-4 border-[#0d0d12] ${
+                            selectedType === "relationship"
+                              ? "bg-rose-400"
+                              : "bg-violet-400"
+                          }`}
                         />
                       </div>
 
-                      <span className="shrink-0 text-xs text-white/30">
-                        {match.lastMessageTime}
-                      </span>
-                    </div>
+                      {/* CONTENT */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="truncate font-semibold">
+                            {match.name}
+                          </h3>
 
-                    <div className="mt-1 flex items-center gap-2 text-xs text-white/30">
-                      <MapPin size={13} />
+                          {match.age !== null && (
+                            <span className="text-sm text-white/35">
+                              {match.age}
+                            </span>
+                          )}
 
-                      {match.location}
-                    </div>
+                          <span
+                            className={`rounded-full border px-2.5 py-0.5 text-[11px] ${
+                              selectedType === "relationship"
+                                ? "border-rose-400/15 bg-rose-500/[0.06] text-rose-300"
+                                : "border-violet-400/15 bg-violet-500/[0.06] text-violet-300"
+                            }`}
+                          >
+                            {selectedType === "relationship"
+                              ? "Relationship"
+                              : "Friends"}
+                          </span>
+                        </div>
 
-                    <p className="mt-2 truncate text-sm text-white/40">
-                      {match.lastMessage}
-                    </p>
-                  </div>
+                        <div className="mt-1 flex items-center gap-2 text-xs text-white/30">
+                          <MapPin size={13} />
+                          {match.location}
+                        </div>
 
-                  {/* RIGHT */}
+                        <p className="mt-2 truncate text-sm text-white/40">
+                          {match.lastMessage}
+                        </p>
+                      </div>
 
-                  <div className="hidden shrink-0 items-center sm:flex">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl text-white/25 transition group-hover:translate-x-1 group-hover:bg-white/[0.04] group-hover:text-rose-300">
-                      <ChevronRight size={19} />
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                      {/* DATE / MESSAGES */}
+                      <div className="hidden shrink-0 text-right sm:block">
+                        <p className="text-xs text-white/30">
+                          {match.lastMessageTime}
+                        </p>
+
+                        <p className="mt-1 text-xs text-white/20">
+                          Conversation
+                        </p>
+                      </div>
+
+                      <ChevronRight
+                        size={19}
+                        className={`shrink-0 transition group-hover:translate-x-1 ${
+                          selectedType === "relationship"
+                            ? "text-rose-300/40"
+                            : "text-violet-300/40"
+                        }`}
+                      />
+                    </Link>
+                  ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* KEEP DISCOVERING */}
 
-          <div className="mt-8 rounded-[28px] border border-white/[0.06] bg-white/[0.015] p-7">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="mb-3 flex items-center gap-2 text-sm text-violet-300">
-                  <Sparkles size={16} />
-                  More connections are waiting
+          {!selectedType && (
+            <div className="mt-8 rounded-[28px] border border-white/[0.06] bg-white/[0.015] p-7">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="mb-3 flex items-center gap-2 text-sm text-violet-300">
+                    <Sparkles size={16} />
+                    More connections are waiting
+                  </div>
+
+                  <h3 className="text-xl font-semibold">
+                    Your next conversation could become your next match.
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-relaxed text-white/40">
+                    Go back into Queuemitment and meet someone new.
+                  </p>
                 </div>
 
-                <h3 className="text-xl font-semibold">
-                  Your next conversation could become your next match.
-                </h3>
-
-                <p className="mt-2 text-sm leading-relaxed text-white/40">
-                  Go back into Queuemitment and meet someone new.
-                </p>
+                <Link
+                  href="/dashboard/queuemitment"
+                  className="group inline-flex shrink-0 items-center justify-center gap-3 rounded-2xl bg-violet-500 px-6 py-4 text-sm font-medium transition hover:bg-violet-400 hover:shadow-lg hover:shadow-violet-500/20 active:scale-[0.98]"
+                >
+                  <Zap
+                    size={17}
+                    className="transition group-hover:fill-white"
+                  />
+                  Enter Queuemitment
+                  <ChevronRight
+                    size={17}
+                    className="transition group-hover:translate-x-1"
+                  />
+                </Link>
               </div>
-
-              <Link
-                href="/dashboard/queuemitment"
-                className="group inline-flex shrink-0 items-center justify-center gap-3 rounded-2xl bg-violet-500 px-6 py-4 text-sm font-medium transition hover:bg-violet-400 hover:shadow-lg hover:shadow-violet-500/20 active:scale-[0.98]"
-              >
-                <Zap size={17} className="transition group-hover:fill-white" />
-                Enter Queuemitment
-                <ChevronRight
-                  size={17}
-                  className="transition group-hover:translate-x-1"
-                />
-              </Link>
             </div>
-          </div>
+          )}
         </div>
       </section>
     </>
