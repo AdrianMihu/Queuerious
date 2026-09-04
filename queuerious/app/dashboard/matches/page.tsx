@@ -328,49 +328,48 @@ export default async function MatchesPage({
           {/* HERO */}
 
           {!selectedType && (
+            <div className="relative overflow-hidden rounded-[32px] border border-rose-400/15 bg-gradient-to-br from-rose-500/[0.14] via-[#171116] to-[#111116] p-7 shadow-2xl shadow-rose-950/10 sm:p-10">
+              <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-rose-500/20 blur-[110px]" />
 
-          <div className="relative overflow-hidden rounded-[32px] border border-rose-400/15 bg-gradient-to-br from-rose-500/[0.14] via-[#171116] to-[#111116] p-7 shadow-2xl shadow-rose-950/10 sm:p-10">
-            <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-rose-500/20 blur-[110px]" />
+              <div className="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+                <div className="max-w-2xl">
+                  <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-rose-400/20 bg-rose-500/10">
+                    <Heart size={25} className="fill-rose-300 text-rose-300" />
+                  </div>
 
-            <div className="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-              <div className="max-w-2xl">
-                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-rose-400/20 bg-rose-500/10">
-                  <Heart size={25} className="fill-rose-300 text-rose-300" />
-                </div>
-
-                <p className="mb-3 text-sm font-medium text-rose-300">
-                  CONNECTIONS, NOT SWIPES
-                </p>
-
-                <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                  Every match started with a conversation.
-                </h2>
-
-                <p className="mt-5 max-w-xl leading-relaxed text-white/45">
-                  You met their mind before their face. Now the conversation
-                  doesn&apos;t have to end.
-                </p>
-              </div>
-
-              {/* MATCH COUNTER */}
-
-              <div className="flex shrink-0 items-center gap-5 rounded-3xl border border-white/[0.08] bg-black/20 p-6 backdrop-blur-sm">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-300">
-                  <Users size={28} />
-                </div>
-
-                <div>
-                  <p className="text-3xl font-semibold">
-                    {displayMatches.length}
+                  <p className="mb-3 text-sm font-medium text-rose-300">
+                    CONNECTIONS, NOT SWIPES
                   </p>
 
-                  <p className="mt-1 text-sm text-white/40">
-                    {displayMatches.length === 1 ? "Match" : "Matches"}
+                  <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+                    Every match started with a conversation.
+                  </h2>
+
+                  <p className="mt-5 max-w-xl leading-relaxed text-white/45">
+                    You met their mind before their face. Now the conversation
+                    doesn&apos;t have to end.
                   </p>
+                </div>
+
+                {/* MATCH COUNTER */}
+
+                <div className="flex shrink-0 items-center gap-5 rounded-3xl border border-white/[0.08] bg-black/20 p-6 backdrop-blur-sm">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-300">
+                    <Users size={28} />
+                  </div>
+
+                  <div>
+                    <p className="text-3xl font-semibold">
+                      {displayMatches.length}
+                    </p>
+
+                    <p className="mt-1 text-sm text-white/40">
+                      {displayMatches.length === 1 ? "Match" : "Matches"}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
           )}
 
           {/* CONVERSATIONS */}
@@ -471,278 +470,103 @@ export default async function MatchesPage({
                   </Link>
                 </div>
               )}
-
-              {selectedType && (
-                <div className="mt-12">
-                  {/* HEADER */}
-                  <div
-                    className={`relative mb-10 overflow-hidden rounded-3xl border p-6 lg:p-7 ${
-                      selectedType === "relationship"
-                        ? "border-rose-400/10 bg-gradient-to-br from-rose-400/[0.06] via-white/[0.02] to-transparent"
-                        : "border-violet-400/10 bg-gradient-to-br from-violet-400/[0.06] via-white/[0.02] to-transparent"
-                    }`}
-                  >
-                    <div
-                      className={`pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full blur-3xl ${
-                        selectedType === "relationship"
-                          ? "bg-rose-400/[0.06]"
-                          : "bg-violet-400/[0.06]"
-                      }`}
-                    />
-
-                    <div className="relative flex items-center justify-between gap-6">
-                      <div className="flex min-w-0 items-center gap-4">
-                        <div
-                          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border ${
-                            selectedType === "relationship"
-                              ? "border-rose-400/20 bg-rose-400/10"
-                              : "border-violet-400/20 bg-violet-400/10"
-                          }`}
-                        >
-                          {selectedType === "relationship" ? (
-                            <Heart className="h-6 w-6 text-rose-400" />
-                          ) : (
-                            <Users className="h-6 w-6 text-violet-400" />
-                          )}
-                        </div>
-
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2.5">
-                            <h1 className="text-2xl font-bold tracking-tight text-white lg:text-3xl">
-                              {selectedType === "relationship"
-                                ? "Relationship Matches"
-                                : "Friends Matches"}
-                            </h1>
-
-                            <span
-                              className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${
-                                selectedType === "relationship"
-                                  ? "border-rose-400/20 bg-rose-400/10 text-rose-400"
-                                  : "border-violet-400/20 bg-violet-400/10 text-violet-400"
-                              }`}
-                            >
-                              {selectedType === "relationship"
-                                ? "Relationship"
-                                : "Friends"}
-                            </span>
-                          </div>
-
-                          <p className="mt-1.5 text-sm text-white/40">
-                            {selectedType === "relationship"
-                              ? "Conversations that became a romantic connection"
-                              : "Conversations that became a friendship"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="hidden shrink-0 text-right sm:block">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/25">
-                          Connections
-                        </p>
-
-                        <p className="mt-1 text-sm font-medium text-white/50">
-                          {
-                            displayMatches.filter(
-                              (match) =>
-                                match.connectionType ===
-                                (selectedType === "relationship"
-                                  ? "Relationship"
-                                  : "Friends")
-                            ).length
-                          }
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* BACK */}
-                  <Link
-                    href="/dashboard/matches"
-                    className="mb-5 inline-flex items-center gap-2 text-sm text-white/35 transition hover:text-white"
-                  >
-                    <ChevronRight size={16} className="rotate-180" />
-                    Back to connections
-                  </Link>
-
-                  {/* MATCHES */}
-                  <div className="grid gap-4">
-                    {displayMatches
-                      .filter(
-                        (match) =>
-                          match.connectionType ===
-                          (selectedType === "relationship"
-                            ? "Relationship"
-                            : "Friends")
-                      )
-                      .map((match) => (
-                        <Link
-                          key={match.id}
-                          href={`/dashboard/matches/${match.id}/chat`}
-                          className={`group relative block overflow-hidden rounded-3xl border bg-white/[0.02] p-5 transition-all duration-300 hover:-translate-y-[1px] ${
-                            selectedType === "relationship"
-                              ? "border-white/[0.07] hover:border-rose-400/20 hover:bg-rose-400/[0.025] hover:shadow-[0_0_40px_rgba(251,113,133,0.05)]"
-                              : "border-white/[0.07] hover:border-violet-400/20 hover:bg-violet-400/[0.025] hover:shadow-[0_0_40px_rgba(167,139,250,0.05)]"
-                          }`}
-                        >
-                          <div
-                            className={`pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full blur-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${
-                              selectedType === "relationship"
-                                ? "bg-rose-400/[0.04]"
-                                : "bg-violet-400/[0.04]"
-                            }`}
-                          />
-
-                          <div className="relative flex items-center justify-between gap-5">
-                            <div className="flex min-w-0 items-center gap-4">
-                              {/* AVATAR */}
-                              <div
-                                className={`relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border bg-gradient-to-br ${
-                                  selectedType === "relationship"
-                                    ? "border-rose-400/15 from-rose-400/10 to-white/[0.03]"
-                                    : "border-violet-400/15 from-violet-400/10 to-white/[0.03]"
-                                }`}
-                              >
-                                {match.image ? (
-                                  <img
-                                    src={match.image}
-                                    alt={match.name}
-                                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                                  />
-                                ) : (
-                                  <span
-                                    className={`text-lg font-semibold ${
-                                      selectedType === "relationship"
-                                        ? "text-rose-400/80"
-                                        : "text-violet-400/80"
-                                    }`}
-                                  >
-                                    {match.name.charAt(0).toUpperCase()}
-                                  </span>
-                                )}
-
-                                <div
-                                  className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-[#0d0d12] ${
-                                    selectedType === "relationship"
-                                      ? "bg-rose-400/70"
-                                      : "bg-violet-400/70"
-                                  }`}
-                                />
-                              </div>
-
-                              {/* INFO */}
-                              <div className="min-w-0">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <h2 className="font-semibold tracking-tight text-white">
-                                    {match.name}
-                                  </h2>
-
-                                  {match.age !== null && (
-                                    <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-white/40">
-                                      {match.age}
-                                    </span>
-                                  )}
-
-                                  <span
-                                    className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${
-                                      selectedType === "relationship"
-                                        ? "border-rose-400/15 bg-rose-400/[0.05] text-rose-300/75"
-                                        : "border-violet-400/15 bg-violet-400/[0.05] text-violet-300/75"
-                                    }`}
-                                  >
-                                    {selectedType === "relationship"
-                                      ? "Relationship"
-                                      : "Friends"}
-                                  </span>
-                                </div>
-
-                                <div className="mt-1.5 flex items-center gap-2 text-xs text-white/30">
-                                  <MapPin size={13} />
-                                  {match.location}
-                                </div>
-
-                                <p className="mt-2 truncate text-sm text-white/35 transition-colors group-hover:text-white/45">
-                                  {match.lastMessage}
-                                </p>
-                              </div>
-                            </div>
-
-                            {/* METADATA */}
-                            <div className="hidden shrink-0 text-right sm:block">
-                              <p className="text-xs text-white/30">
-                                {match.lastMessageTime}
-                              </p>
-
-                              <p className="mt-1 text-[11px] text-white/20">
-                                Conversation
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* MOBILE METADATA */}
-                          <div className="relative mt-4 flex items-center gap-3 border-t border-white/[0.05] pt-3 sm:hidden">
-                            <span className="text-[11px] text-white/25">
-                              {match.lastMessageTime}
-                            </span>
-
-                            <span className="h-1 w-1 rounded-full bg-white/15" />
-
-                            <span className="text-[11px] text-white/20">
-                              Conversation
-                            </span>
-                          </div>
-                        </Link>
-                      ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
           {selectedType && (
             <div className="mt-12">
               {/* HEADER */}
-              <div className="mb-8">
-                <Link
-                  href="/dashboard/matches"
-                  className="mb-6 inline-flex items-center gap-2 text-sm text-white/40 transition hover:text-white"
-                >
-                  <ChevronRight size={16} className="rotate-180" />
-                  Back to connections
-                </Link>
+              <div
+                className={`relative mb-10 overflow-hidden rounded-3xl border p-6 lg:p-7 ${
+                  selectedType === "relationship"
+                    ? "border-rose-400/10 bg-gradient-to-br from-rose-400/[0.06] via-white/[0.02] to-transparent"
+                    : "border-violet-400/10 bg-gradient-to-br from-violet-400/[0.06] via-white/[0.02] to-transparent"
+                }`}
+              >
+                <div
+                  className={`pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full blur-3xl ${
+                    selectedType === "relationship"
+                      ? "bg-rose-400/[0.06]"
+                      : "bg-violet-400/[0.06]"
+                  }`}
+                />
 
-                <div className="flex items-center gap-4">
-                  <div
-                    className={`flex h-14 w-14 items-center justify-center rounded-2xl border ${
-                      selectedType === "relationship"
-                        ? "border-rose-400/20 bg-rose-500/10"
-                        : "border-violet-400/20 bg-violet-500/10"
-                    }`}
-                  >
-                    {selectedType === "relationship" ? (
-                      <Heart size={26} className="text-rose-300" />
-                    ) : (
-                      <Users size={26} className="text-violet-300" />
-                    )}
+                <div className="relative flex items-center justify-between gap-6">
+                  <div className="flex min-w-0 items-center gap-4">
+                    <div
+                      className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border ${
+                        selectedType === "relationship"
+                          ? "border-rose-400/20 bg-rose-400/10"
+                          : "border-violet-400/20 bg-violet-400/10"
+                      }`}
+                    >
+                      {selectedType === "relationship" ? (
+                        <Heart className="h-6 w-6 text-rose-400" />
+                      ) : (
+                        <Users className="h-6 w-6 text-violet-400" />
+                      )}
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        <h1 className="text-2xl font-bold tracking-tight text-white lg:text-3xl">
+                          {selectedType === "relationship"
+                            ? "Relationship Matches"
+                            : "Friends Matches"}
+                        </h1>
+
+                        <span
+                          className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${
+                            selectedType === "relationship"
+                              ? "border-rose-400/20 bg-rose-400/10 text-rose-400"
+                              : "border-violet-400/20 bg-violet-400/10 text-violet-400"
+                          }`}
+                        >
+                          {selectedType === "relationship"
+                            ? "Relationship"
+                            : "Friends"}
+                        </span>
+                      </div>
+
+                      <p className="mt-1.5 text-sm text-white/40">
+                        {selectedType === "relationship"
+                          ? "Conversations that became a romantic connection"
+                          : "Conversations that became a friendship"}
+                      </p>
+                    </div>
                   </div>
 
-                  <div>
-                    <h2 className="text-3xl font-semibold tracking-tight">
-                      {selectedType === "relationship"
-                        ? "Relationship Matches"
-                        : "Friends Matches"}
-                    </h2>
+                  <div className="hidden shrink-0 text-right sm:block">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/25">
+                      Connections
+                    </p>
 
-                    <p className="mt-1 text-sm text-white/40">
-                      {selectedType === "relationship"
-                        ? "Conversations that became a romantic connection"
-                        : "Conversations that became a friendship"}
+                    <p className="mt-1 text-sm font-medium text-white/50">
+                      {
+                        displayMatches.filter(
+                          (match) =>
+                            match.connectionType ===
+                            (selectedType === "relationship"
+                              ? "Relationship"
+                              : "Friends")
+                        ).length
+                      }
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* MATCH LIST */}
-              <div className="space-y-3">
+              {/* BACK */}
+              <Link
+                href="/dashboard/matches"
+                className="mb-5 inline-flex items-center gap-2 text-sm text-white/35 transition hover:text-white"
+              >
+                <ChevronRight size={16} className="rotate-180" />
+                Back to connections
+              </Link>
+
+              {/* MATCHES */}
+              <div className="grid gap-4">
                 {displayMatches
                   .filter(
                     (match) =>
@@ -755,104 +579,110 @@ export default async function MatchesPage({
                     <Link
                       key={match.id}
                       href={`/dashboard/matches/${match.id}/chat`}
-                      className={`group relative flex items-center gap-5 overflow-hidden rounded-[28px] border bg-white/[0.02] p-5 transition ${
+                      className={`group relative block overflow-hidden rounded-3xl border bg-white/[0.02] p-5 transition-all duration-300 hover:-translate-y-[1px] ${
                         selectedType === "relationship"
-                          ? "border-rose-400/10 hover:border-rose-400/25 hover:bg-rose-500/[0.035]"
-                          : "border-violet-400/10 hover:border-violet-400/25 hover:bg-violet-500/[0.035]"
+                          ? "border-white/[0.07] hover:border-rose-400/20 hover:bg-rose-400/[0.025] hover:shadow-[0_0_40px_rgba(251,113,133,0.05)]"
+                          : "border-white/[0.07] hover:border-violet-400/20 hover:bg-violet-400/[0.025] hover:shadow-[0_0_40px_rgba(167,139,250,0.05)]"
                       }`}
                     >
-                      {/* AVATAR */}
-                      <div className="relative shrink-0">
-                        <div
-                          className={`flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border ${
-                            selectedType === "relationship"
-                              ? "border-rose-400/15 bg-rose-500/10"
-                              : "border-violet-400/15 bg-violet-500/10"
-                          }`}
-                        >
-                          {match.image ? (
-                            <img
-                              src={match.image}
-                              alt={match.name}
-                              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                            />
-                          ) : (
-                            <span
-                              className={`text-lg font-semibold ${
-                                selectedType === "relationship"
-                                  ? "text-rose-300"
-                                  : "text-violet-300"
-                              }`}
-                            >
-                              {match.name.charAt(0).toUpperCase()}
-                            </span>
-                          )}
-                        </div>
-
-                        <div
-                          className={`absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-4 border-[#0d0d12] ${
-                            selectedType === "relationship"
-                              ? "bg-rose-400"
-                              : "bg-violet-400"
-                          }`}
-                        />
-                      </div>
-
-                      {/* CONTENT */}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="truncate font-semibold">
-                            {match.name}
-                          </h3>
-
-                          {match.age !== null && (
-                            <span className="text-sm text-white/35">
-                              {match.age}
-                            </span>
-                          )}
-
-                          <span
-                            className={`rounded-full border px-2.5 py-0.5 text-[11px] ${
-                              selectedType === "relationship"
-                                ? "border-rose-400/15 bg-rose-500/[0.06] text-rose-300"
-                                : "border-violet-400/15 bg-violet-500/[0.06] text-violet-300"
-                            }`}
-                          >
-                            {selectedType === "relationship"
-                              ? "Relationship"
-                              : "Friends"}
-                          </span>
-                        </div>
-
-                        <div className="mt-1 flex items-center gap-2 text-xs text-white/30">
-                          <MapPin size={13} />
-                          {match.location}
-                        </div>
-
-                        <p className="mt-2 truncate text-sm text-white/40">
-                          {match.lastMessage}
-                        </p>
-                      </div>
-
-                      {/* DATE / MESSAGES */}
-                      <div className="hidden shrink-0 text-right sm:block">
-                        <p className="text-xs text-white/30">
-                          {match.lastMessageTime}
-                        </p>
-
-                        <p className="mt-1 text-xs text-white/20">
-                          Conversation
-                        </p>
-                      </div>
-
-                      <ChevronRight
-                        size={19}
-                        className={`shrink-0 transition group-hover:translate-x-1 ${
+                      <div
+                        className={`pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full blur-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${
                           selectedType === "relationship"
-                            ? "text-rose-300/40"
-                            : "text-violet-300/40"
+                            ? "bg-rose-400/[0.04]"
+                            : "bg-violet-400/[0.04]"
                         }`}
                       />
+
+                      <div className="relative flex items-center justify-between gap-5">
+                        <div className="flex min-w-0 items-center gap-4">
+                          {/* AVATAR */}
+                          <div
+                            className={`relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border bg-gradient-to-br ${
+                              selectedType === "relationship"
+                                ? "border-rose-400/15 from-rose-400/10 to-white/[0.03]"
+                                : "border-violet-400/15 from-violet-400/10 to-white/[0.03]"
+                            }`}
+                          >
+                            {match.image ? (
+                              <img
+                                src={match.image}
+                                alt={match.name}
+                                className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                              />
+                            ) : (
+                              <span
+                                className={`text-lg font-semibold ${
+                                  selectedType === "relationship"
+                                    ? "text-rose-400/80"
+                                    : "text-violet-400/80"
+                                }`}
+                              >
+                                {match.name.charAt(0).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* INFO */}
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h2 className="font-semibold tracking-tight text-white">
+                                {match.name}
+                              </h2>
+
+                              {match.age !== null && (
+                                <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-white/40">
+                                  {match.age}
+                                </span>
+                              )}
+
+                              <span
+                                className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${
+                                  selectedType === "relationship"
+                                    ? "border-rose-400/15 bg-rose-400/[0.05] text-rose-300/75"
+                                    : "border-violet-400/15 bg-violet-400/[0.05] text-violet-300/75"
+                                }`}
+                              >
+                                {selectedType === "relationship"
+                                  ? "Relationship"
+                                  : "Friends"}
+                              </span>
+                            </div>
+
+                            <div className="mt-1.5 flex items-center gap-2 text-xs text-white/30">
+                              <MapPin size={13} />
+                              {match.location}
+                            </div>
+
+                            <p className="mt-2 truncate text-sm text-white/35 transition-colors group-hover:text-white/45">
+                              {match.lastMessage}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* METADATA */}
+                        <div className="hidden shrink-0 text-right sm:block">
+                          <p className="text-xs text-white/30">
+                            {match.lastMessageTime}
+                          </p>
+
+                          <p className="mt-1 text-[11px] text-white/20">
+                            Conversation
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* MOBILE METADATA */}
+                      <div className="relative mt-4 flex items-center gap-3 border-t border-white/[0.05] pt-3 sm:hidden">
+                        <span className="text-[11px] text-white/25">
+                          {match.lastMessageTime}
+                        </span>
+
+                        <span className="h-1 w-1 rounded-full bg-white/15" />
+
+                        <span className="text-[11px] text-white/20">
+                          Conversation
+                        </span>
+                      </div>
                     </Link>
                   ))}
               </div>
