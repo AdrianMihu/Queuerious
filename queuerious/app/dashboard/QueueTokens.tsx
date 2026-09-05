@@ -163,7 +163,9 @@ export default function QueueTokens({
         disabled={isAutomaticCollection || !canClaim || isClaiming}
         className={`flex items-center gap-3 rounded-full border px-4 py-2 transition ${
           isAutomaticCollection
-            ? "cursor-default border-cyan-400/15 bg-cyan-400/[0.04]"
+            ? activeSubscription === "mind"
+              ? "cursor-default border-cyan-400/15 bg-cyan-400/[0.04]"
+              : "cursor-default border-violet-400/15 bg-violet-500/[0.04]"
             : canClaim
             ? "border-violet-400/20 bg-violet-500/10 hover:bg-violet-500/20"
             : "cursor-not-allowed border-white/[0.07] bg-white/[0.02] opacity-60"
@@ -172,16 +174,23 @@ export default function QueueTokens({
         <div
           className={`flex h-7 w-7 items-center justify-center rounded-full ${
             isAutomaticCollection
-              ? "bg-cyan-400/10"
+              ? activeSubscription === "mind"
+                ? "bg-cyan-400/10"
+                : "bg-violet-500/10"
               : canClaim
               ? "bg-violet-500/15"
               : "bg-white/[0.05]"
           }`}
         >
           {isAutomaticCollection ? (
-            <Gift size={15} className="text-cyan-400/80" />
-          ) : canClaim ? (
-            <Gift size={15} className="text-violet-300" />
+            <Gift
+              size={15}
+              className={
+                activeSubscription === "mind"
+                  ? "text-cyan-400/80"
+                  : "text-violet-300"
+              }
+            />
           ) : (
             <Clock size={15} className="text-white/40" />
           )}
@@ -196,7 +205,11 @@ export default function QueueTokens({
 
           <p
             className={`text-[10px] ${
-              isAutomaticCollection ? "text-cyan-400/60" : "text-white/35"
+              isAutomaticCollection
+                ? activeSubscription === "mind"
+                  ? "text-cyan-400/60"
+                  : "text-violet-300/60"
+                : "text-white/35"
             }`}
           >
             {isAutomaticCollection

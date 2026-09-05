@@ -71,6 +71,46 @@ export default function SettingsPage() {
     loadSubscription();
   }, []);
 
+  useEffect(() => {
+    let channel: ReturnType<ReturnType<typeof createClient>["channel"]> | null =
+      null;
+
+    async function subscribeToSubscription() {
+      const supabase = createClient();
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      channel = supabase
+        .channel(`subscription-${user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "subscriptions",
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            setSubscription(payload.new as typeof subscription);
+          }
+        )
+        .subscribe();
+    }
+
+    subscribeToSubscription();
+
+    return () => {
+      if (channel) {
+        const supabase = createClient();
+        supabase.removeChannel(channel);
+      }
+    };
+  }, []);
+
   async function handleLogout() {
     const supabase = createClient();
 
@@ -311,12 +351,19 @@ export default function SettingsPage() {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => setShowCancelSubscription(true)}
-                    className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-300 transition hover:bg-red-500/20"
-                  >
-                    Cancel membership
-                  </button>
+                  {subscription.cancelled_at ? (
+                    <div className="inline-flex cursor-default items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-white/35">
+                      <Check size={16} />
+                      Membership cancelled
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowCancelSubscription(true)}
+                      className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-300 transition hover:bg-red-500/20"
+                    >
+                      Cancel membership
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (
