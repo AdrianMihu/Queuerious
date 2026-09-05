@@ -15,6 +15,7 @@ type Message = {
 
 type Match = {
   id: string;
+  conversationId: string;
   userId: string;
   name: string;
   age: number;
@@ -141,6 +142,7 @@ export default function MatchChatPage() {
 
       setMatch({
         id: matchData.id,
+        conversationId: matchData.conversation_id,
         userId: otherUserId,
         name: profileData.first_name || "Unknown",
         age,
@@ -169,6 +171,56 @@ export default function MatchChatPage() {
 
     loadMatch();
   }, [matchId]);
+
+  useEffect(() => {
+    if (!match?.conversationId) return;
+  
+    const supabase = createClient();
+  
+    const channel = supabase
+      .channel(`match-chat-${match.conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "conversation_messages",
+          filter: `conversation_id=eq.${match.conversationId}`,
+        },
+        (payload) => {
+          const newMessage = payload.new as {
+            id: number;
+            sender_id: string;
+            content: string | null;
+            created_at: string;
+          };
+  
+          setMessages((currentMessages) => {
+            if (currentMessages.some((item) => item.id === newMessage.id)) {
+              return currentMessages;
+            }
+  
+            return [
+              ...currentMessages,
+              {
+                id: newMessage.id,
+                sender: newMessage.sender_id === match.userId ? "them" : "me",
+                text: newMessage.content || "",
+                time: new Date(newMessage.created_at).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+              },
+            ];
+          });
+        }
+      )
+      .subscribe();
+  
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [match]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
