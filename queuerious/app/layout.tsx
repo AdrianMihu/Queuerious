@@ -24,9 +24,15 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
-    >
+  lang="en"
+  className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+>
+  <head>
+    <meta
+      name="google-adsense-account"
+      content="ca-pub-4714565143786699"
+    />
+  </head>
       <body className="min-h-full flex flex-col">
         {children}
       </body>
