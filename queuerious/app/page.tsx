@@ -62,6 +62,7 @@ export default function Home() {
         console.log("🔥 REFERRAL REWARDED");
       }
     }
+    
 
     router.push("/dashboard");
     router.refresh();
