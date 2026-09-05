@@ -275,6 +275,7 @@ export default async function MatchesPage({
       return {
         id: match.id,
         conversationId: match.conversation_id,
+        lastMessageAt: latestMessage?.created_at || match.created_at,
 
         name: profile.first_name || "Queuerious user",
 
@@ -300,7 +301,12 @@ export default async function MatchesPage({
       };
     })
 
-    .filter((match): match is NonNullable<typeof match> => match !== null);
+    .filter((match): match is NonNullable<typeof match> => match !== null)
+    .sort(
+      (a, b) =>
+        new Date(b.lastMessageAt).getTime() -
+        new Date(a.lastMessageAt).getTime()
+    );
 
   return (
     <>
