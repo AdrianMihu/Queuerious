@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 import {
@@ -12,7 +13,9 @@ import {
   SlidersHorizontal,
   User,
   CircleHelp,
+  Gift,
   Clock3,
+  Share2,
   Zap,
 } from "lucide-react";
 
@@ -28,7 +31,62 @@ export default function DashboardSidebar({
   activeSubscription,
 }: DashboardSidebarProps) {
   const pathname = usePathname();
+  const [adTokenClaimedAt, setAdTokenClaimedAt] = useState<string | null>(null);
+  const [isClaimingAdToken, setIsClaimingAdToken] = useState(false);
   const isQueueWaiting = pathname === "/dashboard/queuemitment/waiting";
+
+
+  useEffect(() => {
+    const supabase = createClient();
+  
+    async function fetchAdTokenStatus() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+  
+      if (!user) return;
+  
+      const { data, error } = await supabase
+        .from("queue_tokens")
+        .select("ad_token_claimed_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
+  
+      if (!error && data) {
+        setAdTokenClaimedAt(data.ad_token_claimed_at);
+      }
+    }
+  
+    fetchAdTokenStatus();
+  
+    const interval = setInterval(fetchAdTokenStatus, 1000);
+  
+    return () => clearInterval(interval);
+  }, []);
+
+  async function handleClaimAdToken() {
+    if (isClaimingAdToken) return;
+  
+    setIsClaimingAdToken(true);
+  
+    const supabase = createClient();
+  
+    const { data, error } = await supabase.rpc("claim_ad_queue_token");
+  
+    if (error) {
+      console.error("Ad token claim error:", error);
+      setIsClaimingAdToken(false);
+      return;
+    }
+  
+    if (typeof data === "number") {
+      setAdTokenClaimedAt(new Date().toISOString());
+    
+      window.dispatchEvent(new Event("queue-tokens-updated"));
+    }
+  
+    setIsClaimingAdToken(false);
+  }
 
   async function handleNavigation() {
     console.log("🔥 HANDLE NAVIGATION", pathname);
@@ -88,13 +146,40 @@ export default function DashboardSidebar({
         </p>
 
         <Link
-          href="/dashboard/how-it-works"
+          href="/dashboard/referral"
           onClick={handleNavigation}
           className="group relative z-[60] flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-500 transition hover:bg-violet-500/10 hover:text-violet-600 dark:text-white/50 dark:hover:text-violet-300"
         >
-          <CircleHelp size={18} />
-          How it Works
+          <Share2 size={18} />
+          Referral
         </Link>
+
+        {adTokenClaimedAt &&
+new Date(adTokenClaimedAt).toDateString() === new Date().toDateString() ? (
+  <div className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-white/30">
+    <Gift size={18} />
+
+    <span className="flex-1 text-left whitespace-nowrap">
+      Free Queue
+    </span>
+
+    <span className="relative top-px text-[10px] text-white/25">
+  Claimed today
+</span>
+  </div>
+) : (
+  <button
+    onClick={handleClaimAdToken}
+    disabled={isClaimingAdToken}
+    className="group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-500 transition hover:bg-violet-500/10 hover:text-violet-600 disabled:cursor-default disabled:opacity-40 dark:text-white/50 dark:hover:text-violet-300"
+  >
+    <Gift size={18} />
+
+    <span className="flex-1 text-left whitespace-nowrap">
+      Free Queue
+    </span>
+  </button>
+)}
       </div>
 
       <nav className="flex-1 px-4 py-6">

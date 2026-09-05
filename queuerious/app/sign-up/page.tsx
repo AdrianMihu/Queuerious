@@ -16,9 +16,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "../../lib/supabase/client";
 
 export default function SignUp() {
+  const searchParams = useSearchParams();
+  const referralCode = searchParams.get("ref");
   const [showPassword, setShowPassword] = useState(false);
   const [showRepeatPassword, setShowRepeatPassword] = useState(false);
 
@@ -145,6 +148,7 @@ export default function SignUp() {
           date_of_birth: dateOfBirth,
           gender,
           country_code: countryCode,
+          referral_code: referralCode || null,
         },
       },
     });
@@ -163,6 +167,7 @@ export default function SignUp() {
           date_of_birth: dateOfBirth,
           gender,
           country_code: countryCode,
+          referral_code: crypto.randomUUID().replace(/-/g, "").slice(0, 8),
           updated_at: new Date().toISOString(),
         },
         {
@@ -176,6 +181,8 @@ export default function SignUp() {
         setLoading(false);
         return;
       }
+
+      
     }
 
     setMessage(

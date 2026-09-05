@@ -108,7 +108,7 @@ export default async function Dashboard() {
               </h2>
 
               <p className="mt-3 text-sm leading-relaxed text-white/35 sm:text-base">
-                No swiping. No judging a profile in two seconds. Just a
+                No swiping. Just a
                 different way to meet someone.
               </p>
             </div>

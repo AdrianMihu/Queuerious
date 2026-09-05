@@ -72,20 +72,23 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    let channel: ReturnType<ReturnType<typeof createClient>["channel"]> | null =
-      null;
-
+    let channel: ReturnType<
+      ReturnType<typeof createClient>["channel"]
+    > | null = null;
+  
+    let cancelled = false;
+  
     async function subscribeToSubscription() {
       const supabase = createClient();
-
+  
       const {
         data: { user },
       } = await supabase.auth.getUser();
-
-      if (!user) return;
-
+  
+      if (!user || cancelled) return;
+  
       channel = supabase
-        .channel(`subscription-${user.id}`)
+        .channel(`subscription-${user.id}-${Date.now()}`)
         .on(
           "postgres_changes",
           {
@@ -100,10 +103,12 @@ export default function SettingsPage() {
         )
         .subscribe();
     }
-
+  
     subscribeToSubscription();
-
+  
     return () => {
+      cancelled = true;
+  
       if (channel) {
         const supabase = createClient();
         supabase.removeChannel(channel);

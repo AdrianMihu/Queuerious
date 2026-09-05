@@ -31,7 +31,7 @@ export default function Home() {
 
     const supabase = createClient();
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -40,6 +40,27 @@ export default function Home() {
       setMessage(error.message);
       setLoading(false);
       return;
+    }
+    
+    if (!data.user?.email_confirmed_at) {
+      setMessage("Please confirm your email before signing in.");
+      setLoading(false);
+      return;
+    }
+
+    const referralCode = data.user.user_metadata?.referral_code;
+
+    if (referralCode) {
+      const { data: referralProcessed, error: referralError } =
+        await supabase.rpc("process_referral", {
+          p_referral_code: referralCode,
+        });
+    
+      if (referralError) {
+        console.error("Error processing referral:", referralError);
+      } else if (referralProcessed) {
+        console.log("🔥 REFERRAL REWARDED");
+      }
     }
 
     router.push("/dashboard");

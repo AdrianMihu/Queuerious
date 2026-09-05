@@ -41,9 +41,14 @@ export default function QueueTokens({
 
     fetchTokens();
 
+    window.addEventListener("queue-tokens-updated", fetchTokens);
+
     const interval = setInterval(fetchTokens, 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("queue-tokens-updated", fetchTokens);
+    };
   }, [userId]);
 
   const [now, setNow] = useState(0);
