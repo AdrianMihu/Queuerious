@@ -241,7 +241,7 @@ useEffect(() => {
     .from("queue_entries")
     .select("id, status, conversation_id")
     .eq("user_id", user.id)
-    .eq("status", "waiting")
+    .in("status", ["waiting", "matched"])
     .order("joined_at", { ascending: false })
     .limit(1)
     .maybeSingle();
