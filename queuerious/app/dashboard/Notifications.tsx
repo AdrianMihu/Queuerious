@@ -24,10 +24,18 @@ export default function Notifications({ userId }: NotificationsProps) {
   const pathname = usePathname();
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [loadingNotificationSettings, setLoadingNotificationSettings] =
+    useState(true);
+
   useEffect(() => {
     const supabase = createClient();
 
     async function fetchNotifications() {
+      if (!notificationsEnabled) {
+        setNotifications([]);
+        return;
+      }
       const { data, error } = await supabase
         .from("notifications")
         .select("id, type, title, message, read_at, created_at")
@@ -43,6 +51,32 @@ export default function Notifications({ userId }: NotificationsProps) {
     }
 
     fetchNotifications();
+  }, [userId, notificationsEnabled]);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    async function loadNotificationSettings() {
+      const { data, error } = await supabase
+        .from("notification_settings")
+        .select("notifications_enabled")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error loading notification settings:", error);
+        setLoadingNotificationSettings(false);
+        return;
+      }
+
+      if (data) {
+        setNotificationsEnabled(data.notifications_enabled);
+      }
+
+      setLoadingNotificationSettings(false);
+    }
+
+    loadNotificationSettings();
   }, [userId]);
 
   const [hasNotifications, setHasNotifications] = useState(false);
@@ -66,6 +100,71 @@ export default function Notifications({ userId }: NotificationsProps) {
     };
   }, []);
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    const channel = supabase
+      .channel(`notification-settings-${userId}-${Date.now()}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notification_settings",
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const enabled = (
+            payload.new as {
+              notifications_enabled: boolean;
+            }
+          ).notifications_enabled;
+
+          setNotificationsEnabled(enabled);
+
+          setNotificationsEnabled(enabled);
+          setNotifications([]);
+          setHasNotifications(false);
+
+          if (!enabled) {
+            setOpen(false);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    function handleNotificationSettingChanged(event: Event) {
+      const customEvent = event as CustomEvent<boolean>;
+      const enabled = customEvent.detail;
+  
+      setNotificationsEnabled(enabled);
+      setNotifications([]);
+  
+      if (!enabled) {
+        setHasNotifications(false);
+        setOpen(false);
+      }
+    }
+  
+    window.addEventListener(
+      "queuerious-notifications-setting-changed",
+      handleNotificationSettingChanged
+    );
+  
+    return () => {
+      window.removeEventListener(
+        "queuerious-notifications-setting-changed",
+        handleNotificationSettingChanged
+      );
+    };
+  }, []);
 
   const notificationRef = useRef<HTMLDivElement>(null);
 
@@ -104,6 +203,10 @@ export default function Notifications({ userId }: NotificationsProps) {
     let cancelled = false;
 
     async function setupNotifications() {
+      if (!notificationsEnabled) {
+        setHasNotifications(false);
+        return;
+      }
       const { data: matches, error } = await supabase
         .from("matches")
         .select("conversation_id")
@@ -192,10 +295,13 @@ export default function Notifications({ userId }: NotificationsProps) {
         supabase.removeChannel(channel);
       }
     };
-  }, [userId, notificationStorageKey]);
+  }, [userId, notificationStorageKey, notificationsEnabled]);
 
   useEffect(() => {
     const supabase = createClient();
+    if (!notificationsEnabled) {
+      return;
+    }
 
     const channel = supabase
       .channel(`referral-notifications-${userId}-${Date.now()}`)
@@ -220,14 +326,19 @@ export default function Notifications({ userId }: NotificationsProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [userId, notificationsEnabled]);
 
   /*
     OPEN NOTIFICATIONS
   */
 
   function handleOpenNotifications() {
+    if (!notificationsEnabled) return;
+
+    setHasNotifications(false);
     setOpen((current) => !current);
+
+    localStorage.setItem(notificationStorageKey, new Date().toISOString());
   }
 
   /*

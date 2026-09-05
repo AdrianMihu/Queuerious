@@ -35,6 +35,9 @@ export default function SettingsPage() {
   const [cancellingSubscription, setCancellingSubscription] = useState(false);
 
   const [changingPassword, setChangingPassword] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [loadingNotifications, setLoadingNotifications] = useState(true);
+  const [savingNotifications, setSavingNotifications] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -72,21 +75,57 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    let channel: ReturnType<
-      ReturnType<typeof createClient>["channel"]
-    > | null = null;
-  
-    let cancelled = false;
-  
-    async function subscribeToSubscription() {
+    async function loadNotificationSettings() {
       const supabase = createClient();
-  
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
+
+      if (!user) {
+        setLoadingNotifications(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("notification_settings")
+        .select("notifications_enabled")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error loading notification settings:", error);
+        setLoadingNotifications(false);
+        return;
+      }
+
+      if (data) {
+        setNotificationsEnabled(data.notifications_enabled);
+      }
+
+      setLoadingNotifications(false);
+    }
+
+    loadNotificationSettings();
+  }, []);
+
   
+
+  useEffect(() => {
+    let channel: ReturnType<ReturnType<typeof createClient>["channel"]> | null =
+      null;
+
+    let cancelled = false;
+
+    async function subscribeToSubscription() {
+      const supabase = createClient();
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user || cancelled) return;
-  
+
       channel = supabase
         .channel(`subscription-${user.id}-${Date.now()}`)
         .on(
@@ -103,12 +142,12 @@ export default function SettingsPage() {
         )
         .subscribe();
     }
-  
+
     subscribeToSubscription();
-  
+
     return () => {
       cancelled = true;
-  
+
       if (channel) {
         const supabase = createClient();
         supabase.removeChannel(channel);
@@ -201,6 +240,50 @@ export default function SettingsPage() {
     } finally {
       setCancellingSubscription(false);
     }
+  }
+
+  async function handleToggleNotifications() {
+    if (loadingNotifications || savingNotifications) return;
+
+    const newValue = !notificationsEnabled;
+
+    setNotificationsEnabled(newValue);
+    window.dispatchEvent(
+      new CustomEvent("queuerious-notifications-setting-changed", {
+        detail: newValue,
+      })
+    );
+    setSavingNotifications(true);
+
+    const supabase = createClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setNotificationsEnabled(!newValue);
+      setSavingNotifications(false);
+      return;
+    }
+
+    const { error } = await supabase.from("notification_settings").upsert(
+      {
+        user_id: user.id,
+        notifications_enabled: newValue,
+        updated_at: new Date().toISOString(),
+      },
+      {
+        onConflict: "user_id",
+      }
+    );
+
+    if (error) {
+      console.error("Error saving notification settings:", error);
+      setNotificationsEnabled(!newValue);
+    }
+
+    setSavingNotifications(false);
   }
 
   return (
@@ -363,7 +446,7 @@ export default function SettingsPage() {
                     </div>
                   ) : (
                     <button
-                      onClick={() => setShowCancelSubscription(true)} 
+                      onClick={() => setShowCancelSubscription(true)}
                       className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-300 transition hover:bg-red-500/20"
                     >
                       Cancel membership
@@ -397,18 +480,40 @@ export default function SettingsPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-4 rounded-2xl border border-gray-200 bg-gray-50 dark:border-white/[0.06] dark:bg-black/10 p-4 opacity-60">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
-                <Bell size={18} />
+            <button
+              type="button"
+              onClick={handleToggleNotifications}
+              disabled={loadingNotifications || savingNotifications}
+              className="flex w-full items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-left transition hover:bg-gray-100 dark:border-white/[0.06] dark:bg-black/10 dark:hover:bg-white/[0.03] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              <div className="flex items-center gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
+                  <Bell size={18} />
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium">In-app notifications</p>
+
+                  <p className="text-xs text-gray-500 dark:text-white/35">
+                    Receive notifications from Queuerious.
+                  </p>
+                </div>
               </div>
 
-              <div>
-                <p className="text-sm font-medium">Coming soon</p>
-                <p className="text-xs text-white/35">
-                  Control your Queuerious notifications.
-                </p>
+              <div
+                className={`relative h-6 w-11 shrink-0 rounded-full transition ${
+                  notificationsEnabled
+                    ? "bg-violet-500"
+                    : "bg-gray-300 dark:bg-white/15"
+                }`}
+              >
+                <div
+                  className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                    notificationsEnabled ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
               </div>
-            </div>
+            </button>
           </section>
 
           {/* Danger Zone */}
