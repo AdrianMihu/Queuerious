@@ -15,11 +15,11 @@ import {
   User,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "../../lib/supabase/client";
 
-export default function SignUp() {
+function SignUpForm() {
   const searchParams = useSearchParams();
   const referralCode = searchParams.get("ref");
   const [showPassword, setShowPassword] = useState(false);
@@ -560,5 +560,13 @@ export default function SignUp() {
         </section>
       </div>
     </main>
+  );
+}
+
+export default function SignUp() {
+  return (
+    <Suspense fallback={null}>
+      <SignUpForm />
+    </Suspense>
   );
 }
