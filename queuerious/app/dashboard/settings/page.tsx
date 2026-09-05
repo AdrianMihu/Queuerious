@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 import {
   Bell,
@@ -108,8 +109,6 @@ export default function SettingsPage() {
 
     loadNotificationSettings();
   }, []);
-
-  
 
   useEffect(() => {
     let channel: ReturnType<ReturnType<typeof createClient>["channel"]> | null =
@@ -560,6 +559,13 @@ export default function SettingsPage() {
             <LogOut size={18} />
             Log out
           </button>
+
+          <Link
+            href="/privacy"
+            className="px-4 pb-2 text-sm text-gray-400 transition hover:text-violet-400 dark:text-white/30 dark:hover:text-violet-300"
+          >
+            Privacy Policy
+          </Link>
         </div>
       </div>
 

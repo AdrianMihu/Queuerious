@@ -118,9 +118,9 @@ function SignUpForm() {
       age--;
     }
 
-    if (age < 16 || age > 90) {
+    if (age < 18 || age > 90) {
       setMessage(
-        "You must be between 16 and 90 years old to create an account."
+        "You must be between 18 and 90 years old to create an account."
       );
       return;
     }
@@ -321,7 +321,7 @@ function SignUpForm() {
                       }
                       endMonth={
                         new Date(
-                          new Date().getFullYear() - 16,
+                          new Date().getFullYear() - 18,
                           new Date().getMonth(),
                           new Date().getDate()
                         )

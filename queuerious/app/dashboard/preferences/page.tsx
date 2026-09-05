@@ -135,13 +135,13 @@ export default function PreferencesPage() {
       hasError = true;
     }
 
-    if (minAge < 16 || minAge > 90) {
-      setMinAgeError("Minimum age must be between 16 and 90.");
+    if (minAge < 18 || minAge > 90) {
+      setMinAgeError("Minimum age must be between 18 and 90.");
       hasError = true;
     }
 
-    if (maxAge < 16 || maxAge > 90) {
-      setMaxAgeError("Maximum age must be between 16 and 90.");
+    if (maxAge < 18 || maxAge > 90) {
+      setMaxAgeError("Maximum age must be between 18 and 90.");
       hasError = true;
     }
 
@@ -361,7 +361,7 @@ export default function PreferencesPage() {
 
                   <input
                     type="number"
-                    min="16"
+                    min="18"
                     max="90"
                     value={minAge}
                     onChange={(e) => setMinAge(Number(e.target.value))}
@@ -384,7 +384,7 @@ export default function PreferencesPage() {
 
                   <input
                     type="number"
-                    min="16"
+                    min="18"
                     max="90"
                     value={maxAge}
                     onChange={(e) => setMaxAge(Number(e.target.value))}
