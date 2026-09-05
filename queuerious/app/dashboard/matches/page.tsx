@@ -1,5 +1,6 @@
 import Link from "next/link";
 import MarkNotificationsSeen from "./MarkNotificationsSeen";
+import MatchesRealtime from "./MatchesRealtime";
 import {
   ChevronRight,
   Heart,
@@ -304,6 +305,7 @@ export default async function MatchesPage({
   return (
     <>
       <MarkNotificationsSeen userId={user.id} />
+      <MatchesRealtime conversationIds={conversationIds} />
       <section className="flex-1 px-6 py-10 lg:px-10 xl:px-16">
         <div className="mx-auto max-w-6xl">
           {/* HEADER */}
