@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useRef, useState, useEffect } from "react";
 import { createClient } from "../../../../../lib/supabase/client";
 import { ArrowLeft, Heart, MapPin, Send, Smile, UserRound } from "lucide-react";
@@ -29,6 +29,9 @@ const emojis = ["😂", "❤️", "🥹", "😏", "🔥", "🤔", "👀", "✨"]
 export default function MatchChatPage() {
   const params = useParams();
   const router = useRouter();
+
+  const searchParams = useSearchParams();
+  const sectionType = searchParams.get("type");
 
   const matchId = Array.isArray(params.matchId)
     ? params.matchId[0]
@@ -269,29 +272,29 @@ export default function MatchChatPage() {
 
   async function handleUnmatch() {
     if (!match) return;
-  
+
     setUnmatching(true);
-  
+
     const supabase = createClient();
-  
+
     console.log("UNMATCHING MATCH ID:", match.id);
-  
+
     // 1. Get the conversation_id
     const { data: matchData, error: matchFetchError } = await supabase
       .from("matches")
       .select("conversation_id")
       .eq("id", match.id)
       .single();
-  
+
     console.log("MATCH DATA:", matchData);
     console.log("MATCH FETCH ERROR:", matchFetchError);
-  
+
     if (matchFetchError || !matchData?.conversation_id) {
       console.error("Could not find conversation:", matchFetchError);
       setUnmatching(false);
       return;
     }
-  
+
     // 2. Cancel BOTH queue entries through the RPC
     const { data: cancelledCount, error: queueError } = await supabase.rpc(
       "cancel_match_queue_entries",
@@ -299,31 +302,31 @@ export default function MatchChatPage() {
         p_conversation_id: matchData.conversation_id,
       }
     );
-  
+
     console.log("RPC CANCELLED COUNT:", cancelledCount);
     console.log("QUEUE ENTRIES CANCEL ERROR:", queueError);
-  
+
     if (queueError) {
       console.error("Error cancelling queue entries:", queueError);
       setUnmatching(false);
       return;
     }
-  
+
     // 3. Delete the match
     const { data, error } = await supabase
       .from("matches")
       .delete()
       .eq("id", match.id)
       .select();
-  
+
     console.log("UNMATCH RESULT:", data);
     console.log("UNMATCH ERROR:", error);
-  
+
     if (error) {
       setUnmatching(false);
       return;
     }
-  
+
     // 4. Go back to matches
     router.push("/dashboard/matches");
     router.refresh();
@@ -343,7 +346,13 @@ export default function MatchChatPage() {
           {/* HEADER */}
           <header className="relative flex shrink-0 items-center gap-3 border-b border-white/[0.07] px-4 py-4 sm:px-6">
             <Link
-              href="/dashboard/matches"
+              href={
+                sectionType === "relationship"
+                  ? "/dashboard/matches?type=relationship"
+                  : sectionType === "friends"
+                  ? "/dashboard/matches?type=friends"
+                  : "/dashboard/matches"
+              }
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.07] text-white/50 transition hover:bg-white/[0.05] hover:text-white"
               aria-label="Back to matches"
             >

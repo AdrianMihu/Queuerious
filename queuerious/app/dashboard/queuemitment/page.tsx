@@ -485,7 +485,7 @@ export default function QueuemitmentPage() {
 
         {/* SMALL INFO */}
         <div className="mt-12 border-t border-white/[0.07] pt-6">
-          <p className="max-w-2xl text-sm leading-relaxed text-white/25">
+          <p className="mx-auto max-w-3xl text-center text-sm leading-relaxed text-white/40">
             Matches are based on your Queuerious preferences. Profiles remain
             hidden at the beginning — because sometimes the best connections
             start with a conversation.

@@ -578,7 +578,7 @@ export default async function MatchesPage({
                   .map((match) => (
                     <Link
                       key={match.id}
-                      href={`/dashboard/matches/${match.id}/chat`}
+                      href={`/dashboard/matches/${match.id}/chat?type=${selectedType}`}
                       className={`group relative block overflow-hidden rounded-3xl border bg-white/[0.02] p-5 transition-all duration-300 hover:-translate-y-[1px] ${
                         selectedType === "relationship"
                           ? "border-white/[0.07] hover:border-rose-400/20 hover:bg-rose-400/[0.025] hover:shadow-[0_0_40px_rgba(251,113,133,0.05)]"

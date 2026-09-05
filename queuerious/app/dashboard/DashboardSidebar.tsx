@@ -59,8 +59,12 @@ export default function DashboardSidebar({
     <aside className="sticky top-0 hidden h-screen w-[260px] shrink-0 border-r border-gray-200 bg-white text-gray-900 dark:border-white/[0.07] dark:bg-[#0d0d12] dark:text-white lg:flex lg:flex-col">
       {/* Logo */}
       <div className="flex h-20 items-center gap-3 border-b border-gray-200 px-6 dark:border-white/[0.07]">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10 text-lg font-bold text-violet-300">
-          Q
+        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl">
+          <img
+            src="/queuerious-logo.png"
+            alt="Queuerious"
+            className="h-full w-full object-cover"
+          />
         </div>
 
         <div>
@@ -211,8 +215,6 @@ export default function DashboardSidebar({
           </Link>
         </div>
       </nav>
-
-    
     </aside>
   );
 }

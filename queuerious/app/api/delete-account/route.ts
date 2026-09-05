@@ -51,6 +51,21 @@ matches
   ?.map((match) => match.conversation_id)
   .filter(Boolean) ?? [];
 
+   /*
+   CANCEL QUEUE ENTRIES
+ */
+
+ if (conversationIds.length > 0) {
+  const { error: cancelQueueEntriesError } = await adminSupabase
+    .from("queue_entries")
+    .update({ status: "cancelled" })
+    .in("conversation_id", conversationIds);
+
+  if (cancelQueueEntriesError) {
+    throw cancelQueueEntriesError;
+  }
+}
+
 /*
   DELETE CONVERSATION MESSAGES
 */
